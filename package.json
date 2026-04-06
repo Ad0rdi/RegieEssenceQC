@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "agent-browser": "^0.24.1",
+    "leaflet.markercluster": "^1.5.3"
+  }
+}
