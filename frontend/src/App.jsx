@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import MarkerCluster from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import { MarkerClusterGroup } from 'leaflet.markercluster';
 import { useStations } from './hooks/useStations';
 
 // --- Constants ---
@@ -160,11 +160,11 @@ function App() {
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <MarkerClusterGroup>
+          <MarkerCluster>
             {filteredFeatures.map((station, index) => (
               <StationMarker key={station.id || index} station={station} />
             ))}
-          </MarkerClusterGroup>
+          </MarkerCluster>
         </MapContainer>
       </div>
     </div>
