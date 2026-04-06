@@ -22,15 +22,13 @@ A web application that visualizes gas station fuel prices (Regular, Super, Diese
 - **Direct Data Consumption:** Moving from a local processed JSON to fetching a remote `.geojson.gz` file to eliminate backend maintenance and ensure real-time data.
 - **Static Hosting:** Transitioning from a Flask server to a static site deployment for better performance and lower cost.
 - **Removal of Python Stack:** Eliminating the Python/Flask/Pandas dependency to simplify the codebase and deployment pipeline.
-
-## Project Structure
-- `/frontend`: The React application (The primary codebase moving forward).
-- `/`: Legacy backend files (To be removed).
+- **Marker Clustering:** Using `react-leaflet-cluster` as a React-friendly wrapper for `leaflet.markercluster` to ensure proper integration with `react-leaflet` and avoid `<NewClass>` errors.
 
 ## Status & Roadmap
 - [x] **Phase 1: Knowledge Base Initialization** (COMPLETED)
 - [x] **Phase 2: Frontend Data Integration** (COMPLETED)
 - [x] **Phase 3: Project Cleanup** (COMPLETED)
-- [ ] **Phase 4: Production Deployment** (PENDING)
+- [x] **Phase 4: Resolve Map Rendering Crash** (COMPLETED)
+- [ ] **Phase 5: Production Deployment** (PENDING)
 
-**Current State:** The project has successfully transitioned from a Flask/Python backend to a pure React/Vite static architecture. Data is now consumed directly from a remote compressed GeoJSON source.
+**Current State:** The project has successfully transitioned from a Flask/Python backend to a pure React/Vite static architecture. Data is now consumed directly from a remote compressed GeoJSON source. The map rendering crash caused by `MarkerClusterGroup` has been resolved by implementing `react-leaflet-cluster`.
