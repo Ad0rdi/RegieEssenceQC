@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { useStations } from './hooks/useStations';
+import { FilterProvider } from './context/FilterContext';
 
 // --- Constants ---
 const DEFAULT_CENTER = [45.5017, -73.5673]; // Example center coordinates
@@ -24,7 +25,7 @@ const calculateDistance = (lat1, lng1, lat2, lng2) => {
   return R * c; // Distance in meters
 };
 
-function App() {
+function AppContent() {
   const { stations, loading, error } = useStations();
   const [userLocation, setUserLocation] = useState(null);
   const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
@@ -168,6 +169,14 @@ function App() {
         </MapContainer>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <FilterProvider>
+      <AppContent />
+    </FilterProvider>
   );
 }
 
