@@ -11,6 +11,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "jsdom": "^29.0.1",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
     "pako": "^2.1.0",

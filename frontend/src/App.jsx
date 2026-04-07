@@ -4,8 +4,8 @@ import MarkerCluster from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import { useFilters } from './context/FilterContext';
 import { useStations } from './hooks/useStations';
-import { FilterProvider } from './context/FilterContext';
 
 // --- Constants ---
 const DEFAULT_CENTER = [45.5017, -73.5673]; // Example center coordinates
@@ -26,7 +26,8 @@ const calculateDistance = (lat1, lng1, lat2, lng2) => {
 };
 
 function AppContent() {
-  const { stations, loading, error } = useStations();
+  const { selectedFuelTypes } = useFilters();
+  const { stations, loading, error } = useStations(selectedFuelTypes);
   const [userLocation, setUserLocation] = useState(null);
   const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
   const [radiusFilter, setRadiusFilter] = useState(null);

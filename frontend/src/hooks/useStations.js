@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchStations } from '../services/dataService';
 
-export const useStations = () => {
+export const useStations = (selectedFuelTypes = ['regular', 'super', 'diesel']) => {
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,7 +33,12 @@ export const useStations = () => {
               diesel: feature.properties.diesel
             },
             address: feature.properties.address
-          }));
+          }))
+          .filter(station => 
+            selectedFuelTypes.some(type => 
+              station.prices?.[type] !== undefined && station.prices?.[type] !== null
+            )
+          );
 
         setStations(transformedStations);
         setError(null);
@@ -47,7 +52,7 @@ export const useStations = () => {
     };
 
     loadStations();
-  }, []);
+  }, [selectedFuelTypes]);
 
   return { stations, loading, error };
 };
