@@ -4,7 +4,7 @@ import MarkerCluster from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import { useFilters } from './context/FilterContext';
+import FuelFilter from './components/Map/FuelFilter';
 import { useStations } from './hooks/useStations';
 
 // --- Constants ---
@@ -152,6 +152,7 @@ function AppContent() {
       </header>
 
       <div className="map-container">
+        <FuelFilter />
         <MapContainer
           center={mapCenter}
           zoom={DEFAULT_ZOOM}
