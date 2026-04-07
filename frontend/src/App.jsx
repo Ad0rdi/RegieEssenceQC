@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import FuelFilter from './components/Map/FuelFilter';
+import StationDrawer from './components/Map/StationDrawer';
 import { useStations } from './hooks/useStations';
 
 // --- Constants ---
@@ -151,25 +152,26 @@ function AppContent() {
         </div>
       </header>
 
-      <div className="map-container">
-        <FuelFilter />
-        <MapContainer
-          center={mapCenter}
-          zoom={DEFAULT_ZOOM}
-          scrollWheelZoom={true}
-          style={{ height: 'calc(100vh - 150px)', width: '100%' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <MarkerCluster>
-            {filteredFeatures.map((station, index) => (
-              <StationMarker key={station.id || index} station={station} />
-            ))}
-          </MarkerCluster>
-        </MapContainer>
-      </div>
+        <div className="map-container">
+          <FuelFilter />
+          <StationDrawer stations={filteredFeatures} />
+          <MapContainer
+            center={mapCenter}
+            zoom={DEFAULT_ZOOM}
+            scrollWheelZoom={true}
+            style={{ height: 'calc(100vh - 150px)', width: '100%' }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MarkerCluster>
+              {filteredFeatures.map((station, index) => (
+                <StationMarker key={station.id || index} station={station} />
+              ))}
+            </MarkerCluster>
+          </MapContainer>
+        </div>
     </div>
   );
 }
