@@ -7,6 +7,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import FuelFilter from './components/Map/FuelFilter';
 import StationDrawer from './components/Map/StationDrawer';
 import { useStations } from './hooks/useStations';
+import { useFilters } from './context/FilterContext';
 
 // --- Constants ---
 const DEFAULT_CENTER = [45.5017, -73.5673]; // Example center coordinates
@@ -92,11 +93,12 @@ function AppContent() {
     return (
       <Marker position={[station.lat, station.lng]}>
         <Popup>
-          <strong>{station.name}</strong><br/>
-          Regular: ${station.prices?.regular?.toFixed(2) || 'N/A'} / L<br/>
-          Super: ${station.prices?.super?.toFixed(2) || 'N/A'} / L<br/>
-          Diesel: ${station.prices?.diesel?.toFixed(2) || 'N/A'} / L<br/>
-          <small>{station.address}</small>
+          <strong style={{ display: 'block', marginBottom: '4px' }}>{station.brand || station.name}</strong>
+          <div style={{ marginBottom: '4px' }}>{station.company}</div>
+          <div style={{ marginBottom: '8px' }}>{station.address}</div>
+          <div>Regular: ${station.prices?.regular?.toFixed(2) || 'N/A'} / L</div>
+          <div>Super: ${station.prices?.super?.toFixed(2) || 'N/A'} / L</div>
+          <div>Diesel: ${station.prices?.diesel?.toFixed(2) || 'N/A'} / L</div>
         </Popup>
       </Marker>
     );
