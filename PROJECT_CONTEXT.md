@@ -21,7 +21,6 @@ A web application that visualizes gas station fuel prices (Regular, Super, Diese
 ## Key Technical Decisions
 - **Direct Data Consumption:** Moving from a local processed JSON to fetching a remote `.geojson.gz` file to eliminate backend maintenance and ensure real-time data.
 - **Static Hosting:** Transitioning from a Flask server to a static site deployment for better performance and lower cost.
-- **Removal of Python Stack:** Eliminating the Python/Flask/Pandas dependency to simplify the codebase and deployment pipeline.
 - **Marker Clustering:** Using `react-leaflet-cluster` as a React-friendly wrapper for `leaflet.markercluster` to ensure proper integration with `react-leaflet` and avoid `<NewClass>` errors.
 
 ## Status & Roadmap

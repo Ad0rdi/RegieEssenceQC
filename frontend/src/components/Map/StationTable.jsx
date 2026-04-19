@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const StationTable = ({ stations }) => {
+const StationTable = ({ stations, onStationClick }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'brand', direction: 'asc' });
 
   const getVal = (s, key) => {
@@ -8,7 +8,8 @@ const StationTable = ({ stations }) => {
     return s[key];
   };
 
-  const sortedStations = [...stations].sort((a, b) => {
+  const sortedStations = [...stations].sort((a,
+    b) => {
     const aVal = getVal(a, sortConfig.key);
     const bVal = getVal(b, sortConfig.key);
     
@@ -30,27 +31,31 @@ const StationTable = ({ stations }) => {
       <table className="station-table">
         <thead>
           <tr>
-            <th onClick={() => requestSort('brand')}>Brand</th>
-            <th onClick={() => requestSort('company')}>Company</th>
-            <th onClick={() => requestSort('address')}>Address</th>
-            <th onClick={() => requestSort('minPrice')}>Min Price</th>
+            <th onClick={() => requestSort('brand')} style={{ cursor: 'pointer' }}>Brand</th>
+            <th onClick={() => requestSort('company')} style={{ cursor: 'pointer' }}>Company</th>
+            <th onClick={() => requestSort('address')} style={{ cursor: 'pointer' }}>Address</th>
+            <th onClick={() => requestSort('minPrice')} style={{ cursor: 'pointer' }}>Min Price</th>
           </tr>
         </thead>
         <tbody>
           {sortedStations.map((station) => (
-            <tr key={station.id}>
-              <td>{station.brand}</td>
-              <td>{station.company}</td>
-              <td>{station.address}</td>
-              <td>
-                {station.prices?.regular ? `$${station.prices.regular.toFixed(2)}` : 'N/A'}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-};
-
-export default StationTable;
+               <tr 
+                 key={station.id} 
+                 onClick={() => onStationClick && onStationClick(station)} 
+                 style={{ cursor: 'pointer' }}
+               >
+                 <td className="station-table-cell">{station.brand || station.name || 'N/A'}</td>
+                 <td className="station-table-cell">{station.company || 'N/A'}</td>
+                 <td className="station-table-cell">{station.address || 'N/A'}</td>
+                 <td className="station-table-cell">
+                   {station.prices?.regular ? `$${station.prices.regular.toFixed(2)}` : 'N/A'}
+                 </td>
+               </tr>
+           ))}
+         </tbody>
+       </table>
+     </div>
+   );
+ };
+ 
+ export default StationTable;

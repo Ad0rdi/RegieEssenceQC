@@ -1,38 +1,63 @@
-import React, { useState, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import { FilterProvider, useFilters } from './context/FilterContext';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import { useStations } from './hooks/useStations';
+import StationDrawer from './components/Map/StationDrawer';
+import FuelFilter from './components/Map/FuelFilter';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerCluster from 'react-leaflet-cluster';
+import React, { useState, useMemo, useEffect } from 'react';
+import './App.css';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import FuelFilter from './components/Map/FuelFilter';
-import StationDrawer from './components/Map/StationDrawer';
-import { useStations } from './hooks/useStations';
-import { useFilters } from './context/FilterContext';
 
-// --- Constants ---
-const DEFAULT_CENTER = [45.5017, -73.5673]; // Example center coordinates
-const DEFAULT_ZOOM = 13;
+// Fix default marker icon issue in React-Leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
-// --- Utility Function ---
-const calculateDistance = (lat1, lng1, lat2, lng2) => {
-  // Haversine formula to calculate distance in meters
-  const R = 6371000; // Radius of the Earth in meters
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lng2 - lng1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // Distance in meters
+
+const DEFAULT_CENTER = [45.5017, -73.5673];
+const DEFAULT_ZOOM = 12;
+
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return d;
+  };
+
+const deg2rad = (deg) => {
+  return deg * (Math.PI / 180);
 };
 
-function AppContent() {
+const selectedIcon = L.icon({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [25, 41],
+});
+
+function AppContent()
+ {
   const { selectedFuelTypes } = useFilters();
   const { stations, loading, error } = useStations(selectedFuelTypes);
   const [userLocation, setUserLocation] = useState(null);
   const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
   const [radiusFilter, setRadiusFilter] = useState(null);
+  const [selectedStationId, setSelectedStationId] = useState(null);
 
   const getLocation = () => {
     if (!navigator.geolocation) {
@@ -56,78 +81,96 @@ function AppContent() {
     return stations.filter(station => {
       let passesPrice = true;
       
-      // 1. Price Filter Check
-      const price = station.prices?.regular;
-      if (priceFilter.min !== null || priceFilter.max !== null) {
-        if (price === undefined || price === null || 
-            price < (priceFilter.min || 0) || price > (priceFilter.max || Infinity)) {
-          passesPrice = false;
+        // 1. Price Filter Check
+        const prices = Object.values(station.prices || {});
+        if (priceFilter.min !== null || priceFilter.max !== null) {
+          const hasValidPriceInRange = prices.some(price => {
+            const min = priceFilter.min || 0;
+            const max = priceFilter.max || Infinity;
+            return price >= min && price <= max;
+          });
+          if (!hasValidPriceInRange) {
+            passesPrice = false;
+          }
         }
-      }
-      
-      // 2. Radius Filter Check
-      let passesRadius = true;
-      if (userLocation && radiusFilter !== null) {
-        const distanceMeters = calculateDistance(
-          userLocation.lat, userLocation.lng,
-          station.lat, station.lng
-        );
         
-        if (distanceMeters > radiusFilter) {
-          passesRadius = false;
+        // 2. Radius Filter Check
+        let passesRadius = true;
+        if (userLocation && radiusFilter !== null) {
+          const distanceKm = calculateDistance(
+            userLocation.lat, userLocation.lng,
+            station.lat, station.lng
+          );
+          
+          if (distanceKm > radiusFilter) {
+            passesRadius = false;
+          }
         }
-      }
-      
-      return passesPrice && passesRadius;
-    });
-  }, [stations, priceFilter, radiusFilter, userLocation]);
+        
+        return passesPrice && passesRadius;
+      });
+    }, [stations, priceFilter, radiusFilter, userLocation]);
 
-
-  // --- Map Marker Component ---
-  const StationMarker = ({ station }) => {
-    // Defensive check for position
-    if (!station || typeof station.lat !== 'number' || typeof station.lng !== 'number') {
-      return null;
-    }
-
-    return (
-      <Marker position={[station.lat, station.lng]}>
-        <Popup>
-          <strong style={{ display: 'block', marginBottom: '4px' }}>{station.brand || station.name}</strong>
-          <div style={{ marginBottom: '4px' }}>{station.company}</div>
-          <div style={{ marginBottom: '8px' }}>{station.address}</div>
-          <div>Regular: ${station.prices?.regular?.toFixed(2) || 'N/A'} / L</div>
-          <div>Super: ${station.prices?.super?.toFixed(2) || 'N/A'} / L</div>
-          <div>Diesel: ${station.prices?.diesel?.toFixed(2) || 'N/A'} / L</div>
-        </Popup>
-      </Marker>
-    );
+  const handleStationClick = (station) => {
+    setSelectedStationId(station.id);
   };
 
-  // Determine map center based on user location or default
-  const mapCenter = userLocation ? [userLocation.lat, userLocation.lng] : DEFAULT_CENTER;
+  const selectedStation = useMemo(() => 
+    filteredFeatures.find(s => s.id === selectedStationId),
+    [filteredFeatures, selectedStationId]
+  );
 
-  if (error) return <div className="error">{error}</div>;
-  if (loading) return <div className="loading">Loading gas station data...</div>;
+  // --- Map Marker Component ---
+    const StationMarker = ({ station, onClick }) => {
+      if (!station || typeof station.lat !== 'number' || typeof station.lng !== 'number') {
+        return null;
+      }
+
+      const isSelected = selectedStationId === station.id;
+
+      return (
+        <Marker position={[station.lat, station.lng]} eventHandlers={{
+          click: () => onClick && onClick(station)
+        }}
+        icon={isSelected ? selectedIcon : undefined}
+      >
+          <Popup
+            style={{
+              backgroundColor: isSelected ? '#fff3cd' : '',
+              border: isSelected ? '2px solid #ffc107' : ''
+            }}
+          >
+            <strong style={{ display: 'block', marginBottom: '4px' }}>{station.brand || station.name || 'N/A'}</strong>
+            <div style={{ marginBottom: '4px' }}>{station.company || 'N/A'}</div>
+            <div style={{ marginBottom: '8px' }}>{station.address || 'N/A'}</div>
+            <div style={{ fontWeight: isSelected ? 'bold' : 'normal' }}>Regular: ${station.prices?.regular?.toFixed(2) || 'N/A'} / L</div>
+            <div style={{ fontWeight: isSelected ? 'bold' : 'normal' }}>Super: ${station.prices?.super?.toFixed(2) || 'N/A'} / L</div>
+            <div style={{ fontWeight: isSelected ? 'bold' : 'normal' }}>Diesel: ${station.prices?.diesel?.toFixed(2) || 'N/A'} / L</div>
+          </Popup>
+        </Marker>
+      );
+    };
+
+  // --- Map Controller Component ---
+  const MapController = ({ station }) => {
+    const map = useMap();
+    useEffect(() => {
+      if (station) {
+        map.flyTo([station.lat, station.lng], 15);
+      }
+    }, [station, map]);
+    return null;
+  };
+
+  const mapCenter = userLocation ? [userLocation.lat, userLocation.lng] : DEFAULT_CENTER;
 
   return (
     <div className="app-container">
-      <header className="header">
-        <h1 className="title">Gas Station Price Map</h1>
-        <div className="controls">
-          <button onClick={getLocation} className="location-btn">Use My Location</button>
-
-          <div className="filter-group">
-            <label htmlFor="min-price">Min Price ($):</label>
-            <input
-              id="min-price"
-              type="number"
-              step="0.01"
-              value={priceFilter.min === null ? '' : priceFilter.min}
-              onChange={(e) => setPriceFilter(p => ({ ...p, min: e.target.value ? parseFloat(e.target.value) : null }))}
-              placeholder="Min Price"
-            />
-          </div>
+      <header className="app-header">
+        <h1>Station Finder</h1>
+        <div className="filter-controls">
+          <button onClick={getLocation}>Use My Location</button>
+          <FuelFilter />
           <div className="filter-group">
             <label htmlFor="max-price">Max Price ($):</label>
             <input
@@ -140,40 +183,39 @@ function AppContent() {
             />
           </div>
           <div className="filter-group">
-            <label htmlFor="radius">Radius (km):</label>
-            <input
-              id="radius"
-              type="number"
-              step="0.1"
-              value={radiusFilter ? (radiusFilter / 1000).toFixed(1) : ''}
-              onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) * 1000 : null)}
-              placeholder="Radius km"
-            />
+           <label htmlFor="radius">Radius (km):</label>
+             <input
+               id="radius"
+               type="number"
+               step="0.1"
+               value={radiusFilter !== null ? radiusFilter.toFixed(1) : ''}
+               onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) : null)}
+               placeholder="Radius km"
+             />
           </div>
-          <button onClick={() => setPriceFilter({ min: null, max: null })} className="reset-btn">Reset Filters</button>
+          <button onClick={() => { setPriceFilter({ min: null, max: null }); setRadiusFilter(null); }} className="reset-btn">Reset Filters</button>
         </div>
-      </header>
-
-        <div className="map-container">
-          <FuelFilter />
-          <StationDrawer stations={filteredFeatures} />
-          <MapContainer
-            center={mapCenter}
-            zoom={DEFAULT_ZOOM}
-            scrollWheelZoom={true}
-            style={{ height: 'calc(100vh - 150px)', width: '100%' }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <MarkerCluster>
-              {filteredFeatures.map((station, index) => (
-                <StationMarker key={station.id || index} station={station} />
-              ))}
-            </MarkerCluster>
-          </MapContainer>
-        </div>
+       </header>
+      <div className="map-container">
+        <StationDrawer stations={filteredFeatures} onStationClick={handleStationClick} />
+        <MapContainer
+          center={mapCenter}
+          zoom={DEFAULT_ZOOM}
+          scrollWheelZoom={true}
+          style={{ height: 'calc(100vh - 150px)', width: '100%' }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <MarkerCluster>
+            {filteredFeatures.map((station) => (
+              <StationMarker key={station.id} station={station} onClick={handleStationClick} />
+            ))}
+          </MarkerCluster>
+          {selectedStation && <MapController station={selectedStation} />}
+        </MapContainer>
+      </div>
     </div>
   );
 }

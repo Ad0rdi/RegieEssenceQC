@@ -32,3 +32,6 @@ __pycache__/
 env/
 venv/
 .ruff_cache/
+
+#Docs
+docs/

@@ -2,5 +2,8 @@
   "dependencies": {
     "agent-browser": "^0.24.1",
     "leaflet.markercluster": "^1.5.3"
+  },
+  "devDependencies": {
+    "jsdom": "^29.0.1"
   }
 }

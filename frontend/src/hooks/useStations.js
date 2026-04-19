@@ -11,43 +11,62 @@ export const useStations = (selectedFuelTypes = ['regular', 'super', 'diesel']) 
       try {
         setLoading(true);
         const data = await fetchStations();
-        
+
         if (!data || !Array.isArray(data.features)) {
           throw new Error('Invalid GeoJSON format: missing features array');
         }
 
-        // Transform GeoJSON features to a simpler station model
+        const typeMap = {
+          'régulier': 'regular',
+          'super': 'super',
+          'diesel': 'diesel',
+          'Régulier': 'regular',
+          'Super': 'super',
+          'Diesel': 'diesel',
+          'regular': 'regular'
+        };
+
         const transformedStations = data.features
           .filter(feature => 
             feature.geometry?.coordinates?.length === 2 &&
             feature.properties
           )
-            .map(feature => {
-              const prices = {};
-              if (feature.properties.Prices && Array.isArray(feature.properties.Prices)) {
-                feature.properties.Prices.forEach(p => {
-                  const typeMap = {
-                    'Régulier': 'regular',
-                    'Super': 'super',
-                    'Diesel': 'diesel'
-                  };
-                  const mappedType = typeMap[p.GasType];
-                   if (mappedType && p.Price && typeof p.Price === 'string' && p.IsAvailable) {
-                      const priceValue = parseFloat(p.Price.replace('¢', '')) / 100;
-                      prices[mappedType] = priceValue;
-                    }
-                });
-              }
+          .map(feature => {
+            const prices = {};
+            const props = feature.properties;
 
-              return {
-                id: feature.properties.id || feature.properties.name,
-                name: feature.properties.name,
-                lat: feature.geometry.coordinates[1],
-                lng: feature.geometry.coordinates[0],
-                prices: prices,
-                address: feature.properties.address
-              };
-            })
+            // Handle Prices array format
+            if (Array.isArray(props.Prices)) {
+              props.Prices.forEach(p => {
+                const mappedType = typeMap[p.GasType];
+                if (mappedType && p.Price && typeof p.Price === 'string' && p.IsAvailable) {
+                  const priceValue = parseFloat(p.Price.replace('¢', '')) / 100;
+                  prices[mappedType] = priceValue;
+                }
+              });
+            } 
+            // Handle prices object format
+            else if (props.prices && typeof props.prices === 'object') {
+              for (const [key, value] of Object.entries(props.prices)) {
+                const mappedType = typeMap[key];
+                if (mappedType) {
+                  const priceValue = typeof value === 'string' 
+                    ? parseFloat(value.replace(/[^\d.]/g, '')) 
+                    : value;
+                  prices[mappedType] = priceValue;
+                }
+              }
+            }
+
+            return {
+              id: props.id || props.name,
+              name: props.name,
+              lat: feature.geometry.coordinates[1],
+              lng: feature.geometry.coordinates[0],
+              prices: prices,
+              address: props.address
+            };
+          })
           .filter(station => 
             selectedFuelTypes.some(type => 
               station.prices?.[type] !== undefined && station.prices?.[type] !== null
@@ -66,7 +85,7 @@ export const useStations = (selectedFuelTypes = ['regular', 'super', 'diesel']) 
     };
 
     loadStations();
-  }, [selectedFuelTypes]);
+  }, [JSON.stringify(selectedFuelTypes)]);
 
   return { stations, loading, error };
 };
