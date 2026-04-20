@@ -7,14 +7,10 @@ import StationDrawer from './components/Map/StationDrawer';
 import FuelFilter from './components/Map/FuelFilter';
 import { MapContainer, TileLayer } from 'react-leaflet';
 import React, { useState, useMemo } from 'react';
-import StationMarker from './components/Map/StationMarker';
 import MapController from './components/Map/MapController';
 import MapMarkers from './components/Map/MapMarkers';
-import { selectedIcon } from './components/Map/mapIcons';
 import { calculateDistance } from './utils/geolocation';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 // Fix default marker icon issue in React-Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
