@@ -4,7 +4,6 @@ const FilterContext = createContext();
 
 export const FilterProvider = ({ children }) => {
   const [selectedFuelTypes, setSelectedFuelTypes] = useState(['regular', 'super', 'diesel']);
-  const [stationRadius, setStationRadius] = useState(5); // km
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const toggleFuelType = (type) => {
@@ -17,8 +16,6 @@ export const FilterProvider = ({ children }) => {
     <FilterContext.Provider value={{ 
       selectedFuelTypes, 
       toggleFuelType, 
-      stationRadius, 
-      setStationRadius,
       drawerOpen,
       setDrawerOpen
     }}>
