@@ -1,16 +1,26 @@
-import { useState, useEffect } from 'react';
-import { fetchStations } from '../services/dataService';
+import { useState, useEffect, useRef } from 'react';
+import { fetchStations as fetchAndProcessStations } from '../services/dataService';
 
-export const useStations = (selectedFuelTypes = ['regular', 'super', 'diesel']) => {
+function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const prevFuelTypesRef = useRef(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const prevFuelTypes = prevFuelTypesRef.current;
+    const currentFuelTypes = JSON.stringify(selectedFuelTypes);
+
+    if (prevFuelTypes !== null && prevFuelTypes === currentFuelTypes) {
+      return;
+    }
+    prevFuelTypesRef.current = currentFuelTypes;
+
     const loadStations = async () => {
       try {
         setLoading(true);
-        const data = await fetchStations();
+        const data = await fetchAndProcessStations();
 
         if (!data || !Array.isArray(data.features)) {
           throw new Error('Invalid GeoJSON format: missing features array');
@@ -27,7 +37,7 @@ export const useStations = (selectedFuelTypes = ['regular', 'super', 'diesel']) 
         };
 
         const transformedStations = data.features
-          .filter(feature => 
+          .filter(feature =>
             feature.geometry?.coordinates?.length === 2 &&
             feature.properties
           )
@@ -44,14 +54,14 @@ export const useStations = (selectedFuelTypes = ['regular', 'super', 'diesel']) 
                   prices[mappedType] = priceValue;
                 }
               });
-            } 
+            }
             // Handle prices object format
             else if (props.prices && typeof props.prices === 'object') {
               for (const [key, value] of Object.entries(props.prices)) {
                 const mappedType = typeMap[key];
                 if (mappedType) {
-                  const priceValue = typeof value === 'string' 
-                    ? parseFloat(value.replace(/[^\d.]/g, '')) 
+                  const priceValue = typeof value === 'string'
+                    ? parseFloat(value.replace(/[^\d.]/g, ''))
                     : value;
                   prices[mappedType] = priceValue;
                 }
@@ -67,8 +77,8 @@ export const useStations = (selectedFuelTypes = ['regular', 'super', 'diesel']) 
               address: props.address
             };
           })
-          .filter(station => 
-            selectedFuelTypes.some(type => 
+          .filter(station =>
+            selectedFuelTypes.some(type =>
               station.prices?.[type] !== undefined && station.prices?.[type] !== null
             )
           );
@@ -76,16 +86,24 @@ export const useStations = (selectedFuelTypes = ['regular', 'super', 'diesel']) 
         setStations(transformedStations);
         setError(null);
       } catch (err) {
-        console.error('Error loading stations:', err);
-        setError(err.message);
-        setStations([]);
+        if (err.name !== 'AbortError') {
+          setError(err.message || 'Erreur de chargement des stations');
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     loadStations();
+
+    return () => {
+      controller.abort();
+    };
   }, [JSON.stringify(selectedFuelTypes)]);
 
   return { stations, loading, error };
-};
+}
+
+export { useStations };
