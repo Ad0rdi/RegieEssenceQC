@@ -5,9 +5,11 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { useStations } from './hooks/useStations';
 import StationDrawer from './components/Map/StationDrawer';
 import FuelFilter from './components/Map/FuelFilter';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer } from 'react-leaflet';
 import MarkerCluster from 'react-leaflet-cluster';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import StationMarker from './components/Map/StationMarker';
+import MapController from './components/Map/MapController';
 import { calculateDistance } from './utils/geolocation';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
@@ -103,48 +105,6 @@ function AppContent()
     [filteredFeatures, selectedStationId]
   );
 
-  // --- Map Marker Component ---
-    const StationMarker = ({ station, onClick }) => {
-      if (!station || typeof station.lat !== 'number' || typeof station.lng !== 'number') {
-        return null;
-      }
-
-      const isSelected = selectedStationId === station.id;
-
-      return (
-        <Marker position={[station.lat, station.lng]} eventHandlers={{
-          click: () => onClick && onClick(station)
-        }}
-        icon={isSelected ? selectedIcon : undefined}
-      >
-          <Popup
-            style={{
-              backgroundColor: isSelected ? '#fff3cd' : '',
-              border: isSelected ? '2px solid #ffc107' : ''
-            }}
-          >
-            <strong style={{ display: 'block', marginBottom: '4px' }}>{station.brand || station.name || 'N/A'}</strong>
-            <div style={{ marginBottom: '4px' }}>{station.company || 'N/A'}</div>
-            <div style={{ marginBottom: '8px' }}>{station.address || 'N/A'}</div>
-            <div style={{ fontWeight: isSelected ? 'bold' : 'normal' }}>Regular: ${station.prices?.regular?.toFixed(2) || 'N/A'} / L</div>
-            <div style={{ fontWeight: isSelected ? 'bold' : 'normal' }}>Super: ${station.prices?.super?.toFixed(2) || 'N/A'} / L</div>
-            <div style={{ fontWeight: isSelected ? 'bold' : 'normal' }}>Diesel: ${station.prices?.diesel?.toFixed(2) || 'N/A'} / L</div>
-          </Popup>
-        </Marker>
-      );
-    };
-
-  // --- Map Controller Component ---
-  const MapController = ({ station }) => {
-    const map = useMap();
-    useEffect(() => {
-      if (station) {
-        map.flyTo([station.lat, station.lng], 15);
-      }
-    }, [station, map]);
-    return null;
-  };
-
   const mapCenter = userLocation ? [userLocation.lat, userLocation.lng] : DEFAULT_CENTER;
 
   return (
@@ -193,7 +153,7 @@ function AppContent()
           />
           <MarkerCluster>
             {filteredFeatures.map((station) => (
-              <StationMarker key={station.id} station={station} onClick={handleStationClick} />
+              <StationMarker key={station.id} station={station} isSelected={selectedStationId === station.id} onClick={handleStationClick} />
             ))}
           </MarkerCluster>
           {selectedStation && <MapController station={selectedStation} />}
