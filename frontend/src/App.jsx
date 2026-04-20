@@ -9,7 +9,6 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerCluster from 'react-leaflet-cluster';
 import React, { useState, useMemo, useEffect } from 'react';
 import { calculateDistance } from './utils/geolocation';
-import './App.css';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
