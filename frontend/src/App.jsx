@@ -138,7 +138,7 @@ function AppContent()
              <input
                id="radius"
                type="number"
-               step="0.1"
+               step="1"
                value={radiusFilter !== null ? radiusFilter.toFixed(1) : ''}
                onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) : null)}
                placeholder="Radius km"
@@ -163,6 +163,7 @@ function AppContent()
             stations={filteredFeatures}
             selectedStationId={selectedStationId}
             onStationClick={handleStationClick}
+            selectedFuelTypes={selectedFuelTypes}
           />
           {selectedStation && <MapController station={selectedStation} />}
         </MapContainer>
