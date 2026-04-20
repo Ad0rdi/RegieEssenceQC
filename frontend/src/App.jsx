@@ -6,10 +6,11 @@ import { useStations } from './hooks/useStations';
 import StationDrawer from './components/Map/StationDrawer';
 import FuelFilter from './components/Map/FuelFilter';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import MarkerCluster from 'react-leaflet-cluster';
 import React, { useState, useMemo } from 'react';
 import StationMarker from './components/Map/StationMarker';
 import MapController from './components/Map/MapController';
+import MapMarkers from './components/Map/MapMarkers';
+import { selectedIcon } from './components/Map/mapIcons';
 import { calculateDistance } from './utils/geolocation';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
@@ -26,15 +27,6 @@ L.Icon.Default.mergeOptions({
 const DEFAULT_CENTER = [45.5017, -73.5673];
 const DEFAULT_ZOOM = 12;
 
-const selectedIcon = L.icon({
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [25, 41],
-});
-
 function AppContent()
  {
   const { selectedFuelTypes } = useFilters();
@@ -46,17 +38,26 @@ function AppContent()
 
   const getLocation = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by this browser.");
+      alert("La géolocalisation n'est pas supportée par ce navigateur.");
       return;
     }
-    navigator.geolocation.getCurrentPosition((position) => {
-      setUserLocation({
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-      });
-    }, (err) => {
-      alert(`Geolocation error: ${err.message}`);
-    });
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      (err) => {
+        const messages = {
+          1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
+          2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
+          3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
+        };
+        alert(messages[err.code] || `Erreur de géolocalisation: ${err.message}`);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   // --- Filtering Logic ---
@@ -65,19 +66,29 @@ function AppContent()
     
     return stations.filter(station => {
       let passesPrice = true;
-      
-        // 1. Price Filter Check
-        const prices = Object.values(station.prices || {});
-        if (priceFilter.min !== null || priceFilter.max !== null) {
-          const hasValidPriceInRange = prices.some(price => {
-            const min = priceFilter.min || 0;
-            const max = priceFilter.max || Infinity;
-            return price >= min && price <= max;
-          });
+
+      // 1. Price Filter Check - only for selected fuel types
+      if (priceFilter.min !== null || priceFilter.max !== null) {
+        const relevantPrices = Object.entries(station.prices || {})
+          .filter(([type]) => {
+            if (selectedFuelTypes.length === 0) return true;
+            return selectedFuelTypes.some(selectedType =>
+              type.toLowerCase().includes(selectedType)
+            );
+          })
+          .map(([type, price]) => price);
+
+        if (relevantPrices.length > 0) {
+          const min = priceFilter.min || 0;
+          const max = priceFilter.max || Infinity;
+          const hasValidPriceInRange = relevantPrices.some(price =>
+            price >= min && price <= max
+          );
           if (!hasValidPriceInRange) {
             passesPrice = false;
           }
         }
+      }
         
         // 2. Radius Filter Check
         let passesRadius = true;
@@ -94,7 +105,8 @@ function AppContent()
         
         return passesPrice && passesRadius;
       });
-    }, [stations, priceFilter, radiusFilter, userLocation]);
+    },
+    [stations, priceFilter, radiusFilter, userLocation, selectedFuelTypes]);
 
   const handleStationClick = (station) => {
     setSelectedStationId(station.id);
@@ -151,11 +163,11 @@ function AppContent()
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <MarkerCluster>
-            {filteredFeatures.map((station) => (
-              <StationMarker key={station.id} station={station} isSelected={selectedStationId === station.id} onClick={handleStationClick} />
-            ))}
-          </MarkerCluster>
+          <MapMarkers
+            stations={filteredFeatures}
+            selectedStationId={selectedStationId}
+            onStationClick={handleStationClick}
+          />
           {selectedStation && <MapController station={selectedStation} />}
         </MapContainer>
       </div>
