@@ -74,7 +74,7 @@ function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
               lat: feature.geometry.coordinates[1],
               lng: feature.geometry.coordinates[0],
               prices: prices,
-              address: props.address
+              address: props.Address || props.address
             };
           })
           .filter(station =>
