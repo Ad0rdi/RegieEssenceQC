@@ -11,6 +11,7 @@ import MapController from './components/Map/MapController';
 import MapMarkers from './components/Map/MapMarkers';
 import PriceLegend from './components/Map/PriceLegend';
 import CitySearchInput from './components/Map/CitySearchInput';
+import CityZoomController from './components/Map/CityZoomController';
 import { calculateDistance } from './utils/geolocation';
 import 'leaflet/dist/leaflet.css';
 
@@ -142,17 +143,17 @@ function AppContent()
               placeholder="Max Price"
             />
           </div>
-          <div className="filter-group">
-           <label htmlFor="radius">Radius (km):</label>
-             <input
-               id="radius"
-               type="number"
-               step="1"
-               value={radiusFilter !== null ? radiusFilter.toFixed(1) : ''}
-               onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) : null)}
-               placeholder="Radius km"
-             />
-          </div>
+         <div className="filter-group">
+            <label htmlFor="radius">Radius (km):</label>
+              <input
+                id="radius"
+                type="number"
+                step="1"
+                value={radiusFilter !== null ? radiusFilter : ''}
+                onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) : null)}
+                placeholder="Radius km"
+              />
+           </div>
           <button onClick={() => { setPriceFilter({ min: null, max: null }); setRadiusFilter(null); }} className="reset-btn">Reset Filters</button>
         </div>
        </header>
@@ -177,6 +178,7 @@ function AppContent()
             selectedFuelType={pricingFuelType}
           />
           {selectedStation && <MapController station={selectedStation} />}
+          {centerLocation?.source === 'city' && <CityZoomController city={centerLocation} />}
         </MapContainer>
       </div>
     </div>
