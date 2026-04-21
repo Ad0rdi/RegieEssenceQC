@@ -1,8 +1,8 @@
 import { useMap } from 'react-leaflet';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet.markercluster';
-import { selectedIcon, calculateAllPriceLevels, getFuelPieIcon } from './mapIcons';
+import { calculateAllPriceLevels, getFuelPieIcon } from './mapIcons';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
@@ -38,6 +38,7 @@ function formatPopupHTML(station, selectedFuelTypes) {
 
 function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelTypes, selectedFuelType }) {
   const map = useMap();
+  const lastPopupStationId = useRef(null);
 
   useEffect(() => {
     const clusterGroup = L.markerClusterGroup({
@@ -50,18 +51,16 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
     const fuelLevelsMap = calculateAllPriceLevels(stations, selectedFuelTypes);
 
     stations.forEach((station) => {
-      const isStationSelected = selectedStationId === station.id;
-      let markerOptions = {};
-      if (isStationSelected) {
-        markerOptions = { icon: selectedIcon };
-      } else {
-        markerOptions = { icon: getFuelPieIcon(selectedFuelTypes, fuelLevelsMap, station.id) };
-      }
+      const markerOptions = { icon: getFuelPieIcon(selectedFuelTypes, fuelLevelsMap, station.id) };
       const marker = L.marker(
         [station.lat, station.lng],
         markerOptions
       ).bindPopup(formatPopupHTML(station, selectedFuelTypes))
-      .on('click', () => onStationClick(station));
+      .on('click', () => {
+        onStationClick(station);
+        lastPopupStationId.current = station.id;
+        marker.openPopup();
+      });
 
       clusterGroup.addLayer(marker);
     });
@@ -71,7 +70,13 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
     return () => {
       map.removeLayer(clusterGroup);
     };
-  }, [stations, selectedStationId, onStationClick, selectedFuelTypes, selectedFuelType, map]);
+  }, [stations, onStationClick, selectedFuelTypes, selectedFuelType, map]);
+
+  useEffect(() => {
+    if (selectedStationId) {
+      lastPopupStationId.current = selectedStationId;
+    }
+  }, [selectedStationId]);
 
   return null;
 }
