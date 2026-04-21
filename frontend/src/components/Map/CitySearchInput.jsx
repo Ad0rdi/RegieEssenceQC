@@ -66,7 +66,7 @@ function CitySearchInput({ onCitySelect }) {
       ).slice(0, 5);
       
       setResults(filtered);
-      setShowDropdown(filtered.length > 0);
+      setShowDropdown(true);
     }, SEARCH_DELAY);
   }, [cities]);
 
