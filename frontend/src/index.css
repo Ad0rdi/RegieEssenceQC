@@ -305,32 +305,51 @@
   flex-wrap: wrap;
 }
 
-.legend-pie {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  flex-shrink: 0;
-}
-
-.legend-labels {
+.legend-pie-wrapper {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
-.legend-item {
+.legend-pie {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.pie-label {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.7), 0 0 4px rgba(0,0,0,0.5);
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.legend-price-key {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.price-key-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: 11px;
   color: var(--text);
 }
 
-.legend-dot {
+.price-key-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+  border: 1px solid var(--border);
 }

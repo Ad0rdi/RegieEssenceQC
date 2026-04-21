@@ -25,6 +25,9 @@ L.Icon.Default.mergeOptions({
 
 const DEFAULT_CENTER = [45.5017, -73.5673];
 const DEFAULT_ZOOM = 12;
+const WHEEL_PX_PER_ZOOM_LEVEL = 150;
+const ZOOM_SNAP = 0.25;
+const ZOOM_DELTA = 0.25;
 
 function AppContent()
  {
@@ -162,7 +165,9 @@ function AppContent()
         <MapContainer
           center={mapCenter}
           zoom={DEFAULT_ZOOM}
-          scrollWheelZoom={true}
+          wheelPxPerZoomLevel={WHEEL_PX_PER_ZOOM_LEVEL}
+          zoomSnap={ZOOM_SNAP}
+          zoomDelta={ZOOM_DELTA}
           style={{ height: 'calc(100vh - 150px)', width: '100%' }}
         >
           <TileLayer
