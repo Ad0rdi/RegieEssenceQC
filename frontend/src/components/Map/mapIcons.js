@@ -35,13 +35,7 @@ function getPriceLevelIcon(level) {
   });
 }
 
-const FUEL_COLORS = {
-  regular: '#16a34a',
-  super: '#f97316',
-  diesel: '#dc2626',
-};
-
-function getFuelPieIcon(selectedFuelTypes) {
+function getFuelPieIcon(selectedFuelTypes, levelsMap, stationId) {
   if (!selectedFuelTypes || selectedFuelTypes.length === 0) {
     return L.divIcon({
       className: 'price-marker',
@@ -53,7 +47,9 @@ function getFuelPieIcon(selectedFuelTypes) {
 
   const n = selectedFuelTypes.length;
   const slices = selectedFuelTypes.map((type, i) => {
-    const color = FUEL_COLORS[type] || '#888';
+    const stationLevels = levelsMap.get(type);
+    const level = stationLevels ? stationLevels.get(stationId) : null;
+    const color = level ? PRICING_COLORS[level] : '#888';
     const start = (i / n) * 100;
     const end = ((i + 1) / n) * 100;
     return `${color} ${start}% ${end}%`;
@@ -110,4 +106,55 @@ function calculatePriceLevels(stations, fuelType) {
   return priceMap;
 }
 
-export { selectedIcon, PRICING_COLORS, FUEL_COLORS, getStationPrice, getPriceLevelIcon, calculatePriceLevels, getFuelPieIcon };
+export { selectedIcon, PRICING_COLORS, getStationPrice, getPriceLevelIcon, calculatePriceLevels, getFuelPieIcon };
+
+export function calculateAllPriceLevels(stations, selectedFuelTypes) {
+  const fuelLevelsMap = new Map();
+
+  selectedFuelTypes.forEach((fuelType) => {
+    const levels = new Map();
+    const entries = stations
+      .map((station) => ({
+        id: station.id,
+        price: station.prices ? station.prices[fuelType] : null,
+      }))
+      .filter((entry) => entry.price != null);
+
+    if (entries.length === 0) {
+      fuelLevelsMap.set(fuelType, levels);
+      return;
+    }
+
+    if (entries.length === 1) {
+      levels.set(entries[0].id, 'low');
+      fuelLevelsMap.set(fuelType, levels);
+      return;
+    }
+
+    const sorted = [...entries].sort((a, b) => a.price - b.price);
+
+    if (sorted.length === 2) {
+      levels.set(sorted[0].id, 'low');
+      levels.set(sorted[1].id, 'high');
+      fuelLevelsMap.set(fuelType, levels);
+      return;
+    }
+
+    const n = sorted.length;
+    const third = n / 3;
+
+    sorted.forEach((entry, i) => {
+      if (i < Math.ceil(third)) {
+        levels.set(entry.id, 'low');
+      } else if (i < Math.ceil(third * 2)) {
+        levels.set(entry.id, 'medium');
+      } else {
+        levels.set(entry.id, 'high');
+      }
+    });
+
+    fuelLevelsMap.set(fuelType, levels);
+  });
+
+  return fuelLevelsMap;
+}

@@ -2,7 +2,7 @@ import { useMap } from 'react-leaflet';
 import { useEffect } from 'react';
 import L from 'leaflet';
 import 'leaflet.markercluster';
-import { selectedIcon, calculatePriceLevels, getPriceLevelIcon, getFuelPieIcon } from './mapIcons';
+import { selectedIcon, calculateAllPriceLevels, getFuelPieIcon } from './mapIcons';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
@@ -47,7 +47,7 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
       zoomToBoundsOnClick: true,
     });
 
-    const levelsMap = calculatePriceLevels(stations, selectedFuelType);
+    const fuelLevelsMap = calculateAllPriceLevels(stations, selectedFuelTypes);
 
     stations.forEach((station) => {
       const isStationSelected = selectedStationId === station.id;
@@ -55,7 +55,7 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
       if (isStationSelected) {
         markerOptions = { icon: selectedIcon };
       } else {
-        markerOptions = { icon: getFuelPieIcon(selectedFuelTypes) };
+        markerOptions = { icon: getFuelPieIcon(selectedFuelTypes, fuelLevelsMap, station.id) };
       }
       const marker = L.marker(
         [station.lat, station.lng],
