@@ -35,6 +35,40 @@ function getPriceLevelIcon(level) {
   });
 }
 
+const FUEL_COLORS = {
+  regular: '#16a34a',
+  super: '#f97316',
+  diesel: '#dc2626',
+};
+
+function getFuelPieIcon(selectedFuelTypes) {
+  if (!selectedFuelTypes || selectedFuelTypes.length === 0) {
+    return L.divIcon({
+      className: 'price-marker',
+      html: '<div style="width:28px;height:28px;border-radius:50%;background:#888;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex!important;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;">$</div>',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+    });
+  }
+
+  const n = selectedFuelTypes.length;
+  const slices = selectedFuelTypes.map((type, i) => {
+    const color = FUEL_COLORS[type] || '#888';
+    const start = (i / n) * 100;
+    const end = ((i + 1) / n) * 100;
+    return `${color} ${start}% ${end}%`;
+  });
+
+  const gradient = `conic-gradient(${slices.join(', ')})`;
+
+  return L.divIcon({
+    className: 'price-marker fuel-pie-marker',
+    html: `<div style="width:28px;height:28px;border-radius:50%;background:${gradient};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  });
+}
+
 function calculatePriceLevels(stations, fuelType) {
   const priceMap = new Map();
 
@@ -76,4 +110,4 @@ function calculatePriceLevels(stations, fuelType) {
   return priceMap;
 }
 
-export { selectedIcon, PRICING_COLORS, getStationPrice, getPriceLevelIcon, calculatePriceLevels };
+export { selectedIcon, PRICING_COLORS, FUEL_COLORS, getStationPrice, getPriceLevelIcon, calculatePriceLevels, getFuelPieIcon };
