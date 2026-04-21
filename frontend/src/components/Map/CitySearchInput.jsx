@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-const QUEBEC_BBOX = '-80.0,41.0,-53.0,52.0';
 const SEARCH_DELAY = 300;
 
 function CitySearchInput({ onCitySelect }) {
@@ -9,9 +8,25 @@ function CitySearchInput({ onCitySelect }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [cities, setCities] = useState([]);
   const searchTimeoutRef = useRef(null);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
+
+  // Load cities data once on mount
+  useEffect(() => {
+    async function loadCities() {
+      try {
+        const response = await fetch('/cities.json');
+        if (!response.ok) throw new Error('Failed to load cities');
+        const data = await response.json();
+        setCities(data);
+      } catch {
+        setError('Erreur: Impossible de charger les villes');
+      }
+    }
+    loadCities();
+  }, []);
 
   const handleClickOutside = useCallback((e) => {
     if (
@@ -43,41 +58,23 @@ function CitySearchInput({ onCitySelect }) {
     }
 
     searchTimeoutRef.current = setTimeout(() => {
-      searchCities(value);
+      // Local search: match anywhere in city name or region
+      const lowerQuery = value.toLowerCase();
+      const filtered = cities.filter(city =>
+        city.name.toLowerCase().includes(lowerQuery) ||
+        city.region.toLowerCase().includes(lowerQuery)
+      ).slice(0, 5);
+      
+      setResults(filtered);
+      setShowDropdown(filtered.length > 0);
     }, SEARCH_DELAY);
-  }, [handleClickOutside]);
-
-  const searchCities = async (searchQuery) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}+quebec&format=json&limit=5&countrycodes=ca&bounded=1&viewbox=${QUEBEC_BBOX}`;
-      
-      const response = await fetch(url, {
-        headers: { 'User-Agent': 'StationFinder-Quebec' }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Network error');
-      }
-      
-      const data = await response.json();
-      setResults(data);
-      setShowDropdown(true);
-    } catch (err) {
-      setError('Erreur: Impossible de chercher les villes');
-      setShowDropdown(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [cities]);
 
   const handleSelect = useCallback((result) => {
     const lat = parseFloat(result.lat);
     const lng = parseFloat(result.lon);
-    onCitySelect({ lat, lng, source: 'city' }, result.display_name);
-    setQuery(result.display_name);
+    onCitySelect({ lat, lng, source: 'city' }, result.name);
+    setQuery(result.name);
     setShowDropdown(false);
   }, [onCitySelect]);
 
@@ -108,7 +105,7 @@ function CitySearchInput({ onCitySelect }) {
               onClick={() => handleSelect(result)}
               className="city-search-item"
             >
-              {result.display_name}
+              {result.name}, {result.region}
             </li>
           ))}
         </ul>
