@@ -9,6 +9,7 @@ import { MapContainer, TileLayer } from 'react-leaflet';
 import React, { useState, useMemo } from 'react';
 import MapController from './components/Map/MapController';
 import MapMarkers from './components/Map/MapMarkers';
+import PriceLegend from './components/Map/PriceLegend';
 import { calculateDistance } from './utils/geolocation';
 import 'leaflet/dist/leaflet.css';
 
@@ -26,6 +27,7 @@ const DEFAULT_ZOOM = 12;
 function AppContent()
  {
   const { selectedFuelTypes } = useFilters();
+  const pricingFuelType = selectedFuelTypes.length > 0 ? selectedFuelTypes[0] : 'regular';
   const { stations, loading, error } = useStations(selectedFuelTypes);
   const [userLocation, setUserLocation] = useState(null);
   const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
@@ -159,11 +161,13 @@ function AppContent()
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          <PriceLegend />
           <MapMarkers
             stations={filteredFeatures}
             selectedStationId={selectedStationId}
             onStationClick={handleStationClick}
             selectedFuelTypes={selectedFuelTypes}
+            selectedFuelType={pricingFuelType}
           />
           {selectedStation && <MapController station={selectedStation} />}
         </MapContainer>

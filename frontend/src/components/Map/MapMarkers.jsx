@@ -2,7 +2,7 @@ import { useMap } from 'react-leaflet';
 import { useEffect } from 'react';
 import L from 'leaflet';
 import 'leaflet.markercluster';
-import { selectedIcon } from './mapIcons';
+import { selectedIcon, calculatePriceLevels, getPriceLevelIcon } from './mapIcons';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
@@ -36,7 +36,7 @@ function formatPopupHTML(station, selectedFuelTypes) {
   </div>`;
 }
 
-function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelTypes }) {
+function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelTypes, selectedFuelType }) {
   const map = useMap();
 
   useEffect(() => {
@@ -47,12 +47,22 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
       zoomToBoundsOnClick: true,
     });
 
+    const levelsMap = calculatePriceLevels(stations, selectedFuelType);
+
     stations.forEach((station) => {
+      const isStationSelected = selectedStationId === station.id;
+      let markerOptions = {};
+      if (isStationSelected) {
+        markerOptions = { icon: selectedIcon };
+      } else {
+        const level = levelsMap.get(station.id);
+        if (level) {
+          markerOptions = { icon: getPriceLevelIcon(level) };
+        }
+      }
       const marker = L.marker(
         [station.lat, station.lng],
-        selectedStationId === station.id
-          ? { icon: selectedIcon }
-          : {}
+        markerOptions
       ).bindPopup(formatPopupHTML(station, selectedFuelTypes))
       .on('click', () => onStationClick(station));
 
@@ -64,7 +74,7 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
     return () => {
       map.removeLayer(clusterGroup);
     };
-  }, [stations, selectedStationId, onStationClick, selectedFuelTypes, map]);
+  }, [stations, selectedStationId, onStationClick, selectedFuelTypes, selectedFuelType, map]);
 
   return null;
 }
