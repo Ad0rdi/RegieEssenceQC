@@ -29,7 +29,7 @@ function getPriceLevelIcon(level) {
   const color = PRICING_COLORS[level];
   return L.divIcon({
     className: 'price-marker',
-    html: '<div class="price-marker" style="width:28px;height:28px;border-radius:50%;background:' + color + ';border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;">$</div>',
+    html: '<div style="width:28px;height:28px;border-radius:50%;background:' + color + ';border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex!important;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;">$</div>',
     iconSize: [28, 28],
     iconAnchor: [14, 14],
   });

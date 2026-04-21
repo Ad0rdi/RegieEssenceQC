@@ -41,7 +41,7 @@ function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
             feature.geometry?.coordinates?.length === 2 &&
             feature.properties
           )
-          .map(feature => {
+          .map((feature, index) => {
             const prices = {};
             const props = feature.properties;
 
@@ -69,8 +69,10 @@ function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
             }
 
             return {
-              id: props.id || props.name,
-              name: props.name,
+              id: 'station-' + index,
+              name: props.Name || props.name || props.id,
+              brand: props.brand,
+              company: props.Name || props.company,
               lat: feature.geometry.coordinates[1],
               lng: feature.geometry.coordinates[0],
               prices: prices,

@@ -1,14 +1,12 @@
 import pako from 'pako';
 
 const GEOJSON_URL = 'https://regieessencequebec.ca/stations.geojson.gz';
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
 
-export const fetchStations = async () => {
-  const response = await fetch(GEOJSON_URL);
-  if (!response.ok) throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const arrayBuffer = await response.arrayBuffer();
-  const uint8Array = new Uint8Array(arrayBuffer);
-
+const processData = (uint8Array) => {
   try {
     // Check if it's actually gzipped (magic bytes 1f 8b)
     if (uint8Array[0] === 0x1f && uint8Array[1] === 0x8b) {
@@ -22,5 +20,23 @@ export const fetchStations = async () => {
     }
   } catch (err) {
     throw new Error(`Failed to process data: ${err.message}`);
+  }
+};
+
+export const fetchStations = async (retries = MAX_RETRIES) => {
+  try {
+    const response = await fetch(GEOJSON_URL);
+    if (!response.ok) throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+
+    const arrayBuffer = await response.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+
+    return processData(uint8Array);
+  } catch (err) {
+    if (retries <= 0) {
+      throw err;
+    }
+    await delay(RETRY_DELAY_MS * (MAX_RETRIES - retries + 1));
+    return fetchStations(retries - 1);
   }
 };
