@@ -69,7 +69,7 @@ function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
             }
 
             return {
-              id: 'station-' + index,
+              id: props.id || 'station-' + index,
               name: props.Name || props.name || props.id,
               brand: props.brand,
               company: props.Name || props.company,

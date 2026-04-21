@@ -31,7 +31,7 @@ vi.mock('react-leaflet', () => ({
           </div>
         ),
   Popup: ({ children }) => <div data-testid="popup">{children}</div>,
-  useMap: () => ({ flyTo: vi.fn() }),
+  useMap: () => ({ flyTo: vi.fn(), addLayer: vi.fn(), removeLayer: vi.fn(), getContainer: vi.fn() }),
 }));
 
 // Mocking MarkerCluster since it's used in App.jsx
@@ -74,7 +74,7 @@ describe('App Component', () => {
   test('should load stations successfully on mount', async () => {
     render(<App />);
       await waitFor(() => {
-        expect(screen.getAllByTestId('marker').length).toBeGreaterThan(0);
+        expect(screen.getByTestId('station-drawer')).toHaveAttribute('data-count', '3');
       });
   });
 
@@ -82,7 +82,7 @@ describe('App Component', () => {
     render(<App />);
     
     await waitFor(() => {
-        expect(screen.getAllByTestId('marker')).toHaveLength(3);
+        expect(screen.getByTestId('station-drawer')).toHaveAttribute('data-count', '3');
     });
     
     const maxInput = screen.getByPlaceholderText(/Max Price/i);
@@ -90,7 +90,7 @@ describe('App Component', () => {
     fireEvent.change(maxInput, { target: { value: '2.0' } });
     
     await waitFor(() => {
-        expect(screen.getAllByTestId('marker')).toHaveLength(2);
+        expect(screen.getByTestId('station-drawer')).toHaveAttribute('data-count', '2');
     });
   });
 });

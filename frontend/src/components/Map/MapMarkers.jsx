@@ -21,7 +21,7 @@ function formatPopupHTML(station, selectedFuelTypes) {
     })
     .map(([type, price]) => {
       const label = fuelLabels[type] || type;
-      const display = price != null ? `$${price.toFixed(2)} / L` : 'N/A';
+      const display = price != null ? `$${price.toFixed(3)} / L` : 'N/A';
       return `<div style="display:flex;justify-content:space-between;gap:12px;margin:2px 0">
         <span>${label}:</span><span style="font-weight:600">${display}</span>
       </div>`;

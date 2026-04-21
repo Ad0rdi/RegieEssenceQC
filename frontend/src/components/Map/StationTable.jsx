@@ -48,7 +48,7 @@ const StationTable = ({ stations, onStationClick }) => {
                  <td className="station-table-cell">{station.company || 'N/A'}</td>
                  <td className="station-table-cell">{station.address || 'N/A'}</td>
                  <td className="station-table-cell">
-                   {station.prices?.regular ? `$${station.prices.regular.toFixed(2)}` : 'N/A'}
+                   {station.prices?.regular ? `$${station.prices.regular.toFixed(3)}` : 'N/A'}
                  </td>
                </tr>
            ))}
