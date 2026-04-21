@@ -6,10 +6,11 @@ import { useStations } from './hooks/useStations';
 import StationDrawer from './components/Map/StationDrawer';
 import FuelFilter from './components/Map/FuelFilter';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import MapController from './components/Map/MapController';
 import MapMarkers from './components/Map/MapMarkers';
 import PriceLegend from './components/Map/PriceLegend';
+import CitySearchInput from './components/Map/CitySearchInput';
 import { calculateDistance } from './utils/geolocation';
 import 'leaflet/dist/leaflet.css';
 
@@ -29,34 +30,39 @@ function AppContent()
   const { selectedFuelTypes } = useFilters();
   const pricingFuelType = selectedFuelTypes.length > 0 ? selectedFuelTypes[0] : 'regular';
   const { stations, loading, error } = useStations(selectedFuelTypes);
-  const [userLocation, setUserLocation] = useState(null);
-  const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
-  const [radiusFilter, setRadiusFilter] = useState(null);
-  const [selectedStationId, setSelectedStationId] = useState(null);
+  const [centerLocation, setCenterLocation] = useState(null);
+   const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
+   const [radiusFilter, setRadiusFilter] = useState(null);
+   const [selectedStationId, setSelectedStationId] = useState(null);
 
-  const getLocation = () => {
-    if (!navigator.geolocation) {
-      alert("La géolocalisation n'est pas supportée par ce navigateur.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-      },
-      (err) => {
-        const messages = {
-          1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
-          2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
-          3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
-        };
-        alert(messages[err.code] || `Erreur de géolocalisation: ${err.message}`);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  };
+   const setGpsLocation = useCallback(() => {
+     if (!navigator.geolocation) {
+       alert("La géolocalisation n'est pas supportée par ce navigateur.");
+       return;
+     }
+     navigator.geolocation.getCurrentPosition(
+       (position) => {
+         setCenterLocation({
+           lat: position.coords.latitude,
+           lng: position.coords.longitude,
+           source: 'gps'
+         });
+       },
+       (err) => {
+         const messages = {
+           1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
+           2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
+           3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
+         };
+         alert(messages[err.code] || `Erreur de géolocalisation: ${err.message}`);
+       },
+       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+     );
+   }, []);
+
+   const handleCitySelect = useCallback((location) => {
+     setCenterLocation(location);
+   }, []);
 
   // --- Filtering Logic ---
   const filteredFeatures = useMemo(() => {
@@ -90,9 +96,9 @@ function AppContent()
         
         // 2. Radius Filter Check
         let passesRadius = true;
-        if (userLocation && radiusFilter !== null) {
+        if (centerLocation && radiusFilter !== null) {
           const distanceKm = calculateDistance(
-            userLocation.lat, userLocation.lng,
+            centerLocation.lat, centerLocation.lng,
             station.lat, station.lng
           );
           
@@ -104,7 +110,7 @@ function AppContent()
         return passesPrice && passesRadius;
       });
     },
-    [stations, priceFilter, radiusFilter, userLocation, selectedFuelTypes]);
+    [stations, priceFilter, radiusFilter, centerLocation, selectedFuelTypes]);
 
   const handleStationClick = (station) => {
     setSelectedStationId(station.id);
@@ -115,14 +121,15 @@ function AppContent()
     [filteredFeatures, selectedStationId]
   );
 
-  const mapCenter = userLocation ? [userLocation.lat, userLocation.lng] : DEFAULT_CENTER;
+  const mapCenter = centerLocation ? [centerLocation.lat, centerLocation.lng] : DEFAULT_CENTER;
 
   return (
     <div className="app-container">
       <header className="app-header">
         <h1>Station Finder</h1>
         <div className="filter-controls">
-          <button onClick={getLocation}>Use My Location</button>
+          <button onClick={setGpsLocation} className="gps-btn">Use My Location</button>
+          <CitySearchInput onCitySelect={handleCitySelect} />
           <FuelFilter />
           <div className="filter-group">
             <label htmlFor="max-price">Max Price ($):</label>

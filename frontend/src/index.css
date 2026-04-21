@@ -261,7 +261,31 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .error-message {
-    color: #f87171;
-  }
-}
+   .error-message {
+     color: #f87171;
+   }
+ }
+
+ /* GPS Button */
+ .gps-btn {
+   padding: 8px 16px;
+   border: 1px solid var(--border);
+   border-radius: 4px;
+   background: var(--bg);
+   color: var(--text-h);
+   cursor: pointer;
+   font-size: 14px;
+   transition: all 0.2s ease;
+ }
+
+ .gps-btn:hover {
+   background: var(--accent-bg);
+   border-color: #007bff;
+ }
+
+ .filter-controls {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   flex-wrap: wrap;
+ }
