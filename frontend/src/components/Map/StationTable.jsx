@@ -6,7 +6,7 @@ const StationTable = ({ stations, onStationClick, selectedStationId }) => {
   const getVal = (s, key) => {
     if (key === 'minPrice') return s.prices?.regular ?? Infinity;
     if (key === 'regular' || key === 'super' || key === 'diesel') return s.prices?.[key] ?? Infinity;
-    return s[key] ?? '';
+    return (s[key] || '') ?? '';
   };
 
   const minRegularPrice = Math.min(...stations.map(s => s.prices?.regular ?? Infinity));
@@ -35,7 +35,6 @@ const StationTable = ({ stations, onStationClick, selectedStationId }) => {
         <thead>
           <tr>
             <th onClick={() => requestSort('brand')} style={{ cursor: 'pointer' }}>Brand</th>
-            <th onClick={() => requestSort('company')} style={{ cursor: 'pointer' }}>Company</th>
             <th onClick={() => requestSort('address')} style={{ cursor: 'pointer' }}>Address</th>
             <th onClick={() => requestSort('regular')} style={{ cursor: 'pointer' }}>Régulier</th>
             <th onClick={() => requestSort('super')} style={{ cursor: 'pointer' }}>Super</th>
@@ -50,9 +49,8 @@ const StationTable = ({ stations, onStationClick, selectedStationId }) => {
                   onClick={() => onStationClick && onStationClick(station)}
                   style={{ cursor: 'pointer' }}
                 >
-                 <td className="station-table-cell">{station.brand || station.name || 'N/A'}</td>
-                 <td className="station-table-cell">{station.company || 'N/A'}</td>
-                 <td className="station-table-cell">{station.address || 'N/A'}</td>
+                <td className="station-table-cell">{station.brand || station.name || 'N/A'}</td>
+                  <td className="station-table-cell">{station.address || 'N/A'}</td>
                  <td className="station-table-cell">
                     {station.prices?.regular != null ? `$${station.prices.regular.toFixed(3)}` : 'N/A'}
                   </td>
