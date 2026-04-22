@@ -73,6 +73,14 @@ function AppContent()
     if (!stations || stations.length === 0) return [];
     
     return stations.filter(station => {
+      // 0. Fuel Type Availability Check - hide stations without any selected fuel
+      if (selectedFuelTypes.length > 0) {
+        const hasSelectedFuel = selectedFuelTypes.some(type =>
+          station.prices?.[type] != null
+        );
+        if (!hasSelectedFuel) return false;
+      }
+
       let passesPrice = true;
 
       // 1. Price Filter Check - only for selected fuel types
