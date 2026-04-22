@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 const StationTable = ({ stations, onStationClick, selectedStationId }) => {
-  const [sortConfig, setSortConfig] = useState({ key: 'brand', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'regular', direction: 'asc' });
 
   const getVal = (s, key) => {
     if (key === 'minPrice') return s.prices?.regular ?? Infinity;
