@@ -29,6 +29,16 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
     setSortConfig({ key, direction });
   };
 
+  const FUEL_COLUMNS = [
+    { key: 'regular', label: 'Régulier' },
+    { key: 'super', label: 'Super' },
+    { key: 'diesel', label: 'Diesel' },
+  ];
+
+  const visibleFuelColumns = FUEL_COLUMNS.filter(col =>
+    selectedFuelTypes?.includes(col.key)
+  );
+
   return (
     <div className="station-table-container">
       <table className="station-table">
@@ -36,9 +46,9 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
           <tr>
             <th onClick={() => requestSort('brand')} style={{ cursor: 'pointer' }}>Brand</th>
             <th onClick={() => requestSort('address')} style={{ cursor: 'pointer' }}>Address</th>
-            <th onClick={() => requestSort('regular')} style={{ cursor: 'pointer' }}>Régulier</th>
-            <th onClick={() => requestSort('super')} style={{ cursor: 'pointer' }}>Super</th>
-            <th onClick={() => requestSort('diesel')} style={{ cursor: 'pointer' }}>Diesel</th>
+            {visibleFuelColumns.map(col => (
+              <th key={col.key} onClick={() => requestSort(col.key)} style={{ cursor: 'pointer' }}>{col.label}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -49,17 +59,13 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
                   onClick={() => onStationClick && onStationClick(station)}
                   style={{ cursor: 'pointer' }}
                 >
-                <td className="station-table-cell">{station.brand || station.name || 'N/A'}</td>
+               <td className="station-table-cell">{station.brand || station.name || 'N/A'}</td>
                   <td className="station-table-cell">{station.address || 'N/A'}</td>
-                 <td className="station-table-cell">
-                    {station.prices?.regular != null ? `$${station.prices.regular.toFixed(3)}` : 'N/A'}
-                  </td>
-                  <td className="station-table-cell">
-                    {station.prices?.super != null ? `$${station.prices.super.toFixed(3)}` : 'N/A'}
-                  </td>
-                  <td className="station-table-cell">
-                    {station.prices?.diesel != null ? `$${station.prices.diesel.toFixed(3)}` : 'N/A'}
-                  </td>
+                  {visibleFuelColumns.map(col => (
+                    <td key={col.key} className="station-table-cell">
+                      {station.prices?.[col.key] != null ? `$${station.prices[col.key].toFixed(3)}` : 'N/A'}
+                    </td>
+                  ))}
                </tr>
            ))}
          </tbody>
