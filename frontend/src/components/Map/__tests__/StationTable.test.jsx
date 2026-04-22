@@ -19,7 +19,9 @@ describe('StationTable', () => {
     expect(screen.getByText('Brand')).toBeTruthy();
     expect(screen.getByText('Company')).toBeTruthy();
     expect(screen.getByText('Address')).toBeTruthy();
-    expect(screen.getByText('Min Price')).toBeTruthy();
+    expect(screen.getByText('Régulier')).toBeTruthy();
+    expect(screen.getByText('Super')).toBeTruthy();
+    expect(screen.getByText('Diesel')).toBeTruthy();
   });
 
   it('renders prices for each station', () => {
@@ -68,10 +70,23 @@ describe('StationTable', () => {
     expect(screen.getByText('Brand A')).toBeTruthy();
   });
 
-  it('sorts by min price column when clicked', () => {
+  it('sorts by regular price column when clicked', () => {
     render(<StationTable stations={mockStations} onStationClick={vi.fn()} />);
-    const priceHeader = screen.getByText('Min Price');
+    const priceHeader = screen.getByText('Régulier');
     fireEvent.click(priceHeader);
     expect(screen.getByText('$1.399')).toBeTruthy();
+  });
+
+  it('highlights the cheapest station row', () => {
+    render(<StationTable stations={mockStations} onStationClick={vi.fn()} />);
+    const rows = document.querySelectorAll('tbody tr');
+    // Station B has the cheapest regular price (1.399 < 1.459)
+    expect(rows[0]).toHaveClass('cheapest-row');
+  });
+
+  it('highlights the selected station row', () => {
+    render(<StationTable stations={mockStations} onStationClick={vi.fn()} selectedStationId={1} />);
+    const rows = document.querySelectorAll('tbody tr');
+    expect(rows[1]).toHaveClass('selected-row');
   });
 });
