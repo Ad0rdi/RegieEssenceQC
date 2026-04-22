@@ -5,7 +5,8 @@ const StationTable = ({ stations, onStationClick }) => {
 
   const getVal = (s, key) => {
     if (key === 'minPrice') return s.prices?.regular ?? Infinity;
-    return s[key];
+    if (key === 'regular' || key === 'super' || key === 'diesel') return s.prices?.[key] ?? Infinity;
+    return s[key] ?? '';
   };
 
   const sortedStations = [...stations].sort((a,
@@ -34,7 +35,9 @@ const StationTable = ({ stations, onStationClick }) => {
             <th onClick={() => requestSort('brand')} style={{ cursor: 'pointer' }}>Brand</th>
             <th onClick={() => requestSort('company')} style={{ cursor: 'pointer' }}>Company</th>
             <th onClick={() => requestSort('address')} style={{ cursor: 'pointer' }}>Address</th>
-            <th onClick={() => requestSort('minPrice')} style={{ cursor: 'pointer' }}>Min Price</th>
+            <th onClick={() => requestSort('regular')} style={{ cursor: 'pointer' }}>Régulier</th>
+            <th onClick={() => requestSort('super')} style={{ cursor: 'pointer' }}>Super</th>
+            <th onClick={() => requestSort('diesel')} style={{ cursor: 'pointer' }}>Diesel</th>
           </tr>
         </thead>
         <tbody>
@@ -48,8 +51,14 @@ const StationTable = ({ stations, onStationClick }) => {
                  <td className="station-table-cell">{station.company || 'N/A'}</td>
                  <td className="station-table-cell">{station.address || 'N/A'}</td>
                  <td className="station-table-cell">
-                   {station.prices?.regular ? `$${station.prices.regular.toFixed(3)}` : 'N/A'}
-                 </td>
+                    {station.prices?.regular != null ? `$${station.prices.regular.toFixed(3)}` : 'N/A'}
+                  </td>
+                  <td className="station-table-cell">
+                    {station.prices?.super != null ? `$${station.prices.super.toFixed(3)}` : 'N/A'}
+                  </td>
+                  <td className="station-table-cell">
+                    {station.prices?.diesel != null ? `$${station.prices.diesel.toFixed(3)}` : 'N/A'}
+                  </td>
                </tr>
            ))}
          </tbody>
