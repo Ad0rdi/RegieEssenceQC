@@ -9,7 +9,18 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
     return (s[key] || '') ?? '';
   };
 
-  const minRegularPrice = Math.min(...stations.map(s => s.prices?.regular ?? Infinity));
+  const FUEL_COLUMNS = [
+    { key: 'regular', label: 'Régulier' },
+    { key: 'super', label: 'Super' },
+    { key: 'diesel', label: 'Diesel' },
+  ];
+
+  const visibleFuelColumns = FUEL_COLUMNS.filter(col =>
+    selectedFuelTypes?.includes(col.key)
+  );
+
+  const primaryFuelKey = visibleFuelColumns.length > 0 ? visibleFuelColumns[0].key : 'regular';
+  const minPrimaryPrice = Math.min(...stations.map(s => s.prices?.[primaryFuelKey] ?? Infinity));
 
   const sortedStations = [...stations].sort((a,
     b) => {
@@ -29,16 +40,6 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
     setSortConfig({ key, direction });
   };
 
-  const FUEL_COLUMNS = [
-    { key: 'regular', label: 'Régulier' },
-    { key: 'super', label: 'Super' },
-    { key: 'diesel', label: 'Diesel' },
-  ];
-
-  const visibleFuelColumns = FUEL_COLUMNS.filter(col =>
-    selectedFuelTypes?.includes(col.key)
-  );
-
   return (
     <div className="station-table-container">
       <table className="station-table">
@@ -55,7 +56,7 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
           {sortedStations.map((station) => (
               <tr
                   key={station.id}
-                  className={`station-row ${station.prices?.regular === minRegularPrice ? 'cheapest-row' : ''} ${selectedStationId === station.id ? 'selected-row' : ''}`}
+                  className={`station-row ${station.prices?.[primaryFuelKey] === minPrimaryPrice ? 'cheapest-row' : ''} ${selectedStationId === station.id ? 'selected-row' : ''}`}
                   onClick={() => onStationClick && onStationClick(station)}
                   style={{ cursor: 'pointer' }}
                 >
