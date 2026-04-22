@@ -75,8 +75,9 @@ function AppContent()
     return stations.filter(station => {
       // 0. Fuel Type Availability Check - hide stations without any selected fuel
       if (selectedFuelTypes.length > 0) {
+        const stationFuelKeys = Object.keys(station.prices || {});
         const hasSelectedFuel = selectedFuelTypes.some(type =>
-          station.prices?.[type] != null
+          stationFuelKeys.includes(type)
         );
         if (!hasSelectedFuel) return false;
       }
