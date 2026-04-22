@@ -17,7 +17,6 @@ describe('StationTable', () => {
   it('renders table headers', () => {
     render(<StationTable stations={mockStations} onStationClick={vi.fn()} />);
     expect(screen.getByText('Brand')).toBeTruthy();
-    expect(screen.getByText('Company')).toBeTruthy();
     expect(screen.getByText('Address')).toBeTruthy();
     expect(screen.getByText('Régulier')).toBeTruthy();
     expect(screen.getByText('Super')).toBeTruthy();
@@ -30,10 +29,8 @@ describe('StationTable', () => {
     expect(screen.getByText('$1.399')).toBeTruthy();
   });
 
-  it('renders company and address for each station', () => {
+  it('renders address for each station', () => {
     render(<StationTable stations={mockStations} onStationClick={vi.fn()} />);
-    expect(screen.getByText('Company A')).toBeTruthy();
-    expect(screen.getByText('Company B')).toBeTruthy();
     expect(screen.getByText('123 Main St')).toBeTruthy();
     expect(screen.getByText('456 Oak Ave')).toBeTruthy();
   });
