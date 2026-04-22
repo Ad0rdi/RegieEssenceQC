@@ -3,7 +3,7 @@ import { useFilters } from '../../context/FilterContext';
 import StationTable from './StationTable';
 
 const StationDrawer = ({ stations, onStationClick, selectedStationId }) => {
-  const { drawerOpen, setDrawerOpen } = useFilters();
+  const { drawerOpen, setDrawerOpen, selectedFuelTypes } = useFilters();
 
   return (
     <div className={`station-drawer ${drawerOpen ? 'expanded' : 'collapsed'}`}>
@@ -12,7 +12,7 @@ const StationDrawer = ({ stations, onStationClick, selectedStationId }) => {
       </button>
       {drawerOpen && (
         <div className="drawer-content">
-          <StationTable stations={stations} onStationClick={onStationClick} selectedStationId={selectedStationId} />
+          <StationTable stations={stations} onStationClick={onStationClick} selectedStationId={selectedStationId} selectedFuelTypes={selectedFuelTypes} />
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const StationTable = ({ stations, onStationClick, selectedStationId }) => {
+const StationTable = ({ stations, onStationClick, selectedStationId, selectedFuelTypes }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'regular', direction: 'asc' });
 
   const getVal = (s, key) => {
