@@ -2,7 +2,7 @@ import React from 'react';
 import { useFilters } from '../../context/FilterContext';
 import StationTable from './StationTable';
 
-const StationDrawer = ({ stations, onStationClick }) => {
+const StationDrawer = ({ stations, onStationClick, selectedStationId }) => {
   const { drawerOpen, setDrawerOpen } = useFilters();
 
   return (
@@ -12,7 +12,7 @@ const StationDrawer = ({ stations, onStationClick }) => {
       </button>
       {drawerOpen && (
         <div className="drawer-content">
-          <StationTable stations={stations} onStationClick={onStationClick} />
+          <StationTable stations={stations} onStationClick={onStationClick} selectedStationId={selectedStationId} />
         </div>
       )}
     </div>

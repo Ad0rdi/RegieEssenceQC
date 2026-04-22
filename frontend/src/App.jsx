@@ -161,7 +161,7 @@ function AppContent()
         </div>
        </header>
       <div className="map-container">
-        <StationDrawer stations={filteredFeatures} onStationClick={handleStationClick} />
+        <StationDrawer stations={filteredFeatures} onStationClick={handleStationClick} selectedStationId={selectedStationId} />
         <MapContainer
           center={mapCenter}
           zoom={DEFAULT_ZOOM}

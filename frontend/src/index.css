@@ -353,3 +353,17 @@
   flex-shrink: 0;
   border: 1px solid var(--border);
 }
+
+.station-table tr.cheapest-row {
+  border-left: 3px solid #16a34a;
+  background: rgba(22, 163, 74, 0.04);
+}
+
+.station-table tr.selected-row {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.station-table tr.cheapest-row.selected-row {
+  border-left: 3px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.12);
+}

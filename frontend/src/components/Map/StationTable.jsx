@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const StationTable = ({ stations, onStationClick }) => {
+const StationTable = ({ stations, onStationClick, selectedStationId }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'brand', direction: 'asc' });
 
   const getVal = (s, key) => {
@@ -8,6 +8,8 @@ const StationTable = ({ stations, onStationClick }) => {
     if (key === 'regular' || key === 'super' || key === 'diesel') return s.prices?.[key] ?? Infinity;
     return s[key] ?? '';
   };
+
+  const minRegularPrice = Math.min(...stations.map(s => s.prices?.regular ?? Infinity));
 
   const sortedStations = [...stations].sort((a,
     b) => {
@@ -42,11 +44,12 @@ const StationTable = ({ stations, onStationClick }) => {
         </thead>
         <tbody>
           {sortedStations.map((station) => (
-               <tr 
-                 key={station.id} 
-                 onClick={() => onStationClick && onStationClick(station)} 
-                 style={{ cursor: 'pointer' }}
-               >
+              <tr
+                  key={station.id}
+                  className={`station-row ${station.prices?.regular === minRegularPrice ? 'cheapest-row' : ''} ${selectedStationId === station.id ? 'selected-row' : ''}`}
+                  onClick={() => onStationClick && onStationClick(station)}
+                  style={{ cursor: 'pointer' }}
+                >
                  <td className="station-table-cell">{station.brand || station.name || 'N/A'}</td>
                  <td className="station-table-cell">{station.company || 'N/A'}</td>
                  <td className="station-table-cell">{station.address || 'N/A'}</td>
