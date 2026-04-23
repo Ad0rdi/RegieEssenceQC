@@ -31,7 +31,7 @@ vi.mock('react-leaflet', () => ({
           </div>
         ),
   Popup: ({ children }) => <div data-testid="popup">{children}</div>,
-  useMap: () => ({ flyTo: vi.fn(), addLayer: vi.fn(), removeLayer: vi.fn(), getContainer: vi.fn() }),
+  useMap: () => ({ flyTo: vi.fn(), addLayer: vi.fn(), removeLayer: vi.fn(), getContainer: vi.fn(), on: vi.fn(), off: vi.fn(), panTo: vi.fn(), setView: vi.fn(), getZoom: vi.fn(), hasLayer: vi.fn().mockReturnValue(true), eachLayer: vi.fn() }),
 }));
 
 // Mocking MarkerCluster since it's used in App.jsx

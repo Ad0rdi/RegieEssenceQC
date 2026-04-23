@@ -6,6 +6,9 @@ import { calculateAllPriceLevels, getFuelPieIcon } from './mapIcons';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
+// Module-level ref for MapController to reopen popup after flyTo animation
+export const popupMarker = { ref: null };
+
 function formatPopupHTML(station, selectedFuelTypes) {
   const prices = station.prices || {};
   const fuelLabels = {
@@ -38,17 +41,35 @@ function formatPopupHTML(station, selectedFuelTypes) {
 
 function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelTypes, selectedFuelType }) {
   const map = useMap();
-  const lastPopupStationId = useRef(null);
+  const clusterGroupRef = useRef(null);
+  const onStationClickRef = useRef(onStationClick);
+
+  // Keep callback ref up to date without triggering effect re-runs
+  useEffect(() => {
+    onStationClickRef.current = onStationClick;
+  }, [onStationClick]);
+
+  // Create a stable key from station data to trigger recreation only when markers change
+  const dataKey = stations?.map(s => `${s.id}-${s.lat}-${s.lng}`).sort().join('|') || '';
+  const fuelKey = selectedFuelTypes?.sort().join('|') || '';
 
   useEffect(() => {
-    const clusterGroup = L.markerClusterGroup({
-      maxClusterRadius: 50,
-      spiderfyOnMaxZoom: true,
-      showCoverageOnHover: false,
-      zoomToBoundsOnClick: true,
-    });
+    // Create cluster group if needed, or recreate if cleanup removed it
+    if (!clusterGroupRef.current || !map.hasLayer(clusterGroupRef.current)) {
+      const newClusterGroup = L.markerClusterGroup({
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+      });
+      clusterGroupRef.current = newClusterGroup;
+      map.addLayer(newClusterGroup);
+    }
 
     const fuelLevelsMap = calculateAllPriceLevels(stations, selectedFuelTypes);
+
+    // Clear existing markers (doesn't destroy cluster group)
+    clusterGroupRef.current.clearLayers();
 
     stations.forEach((station) => {
       const markerOptions = { icon: getFuelPieIcon(selectedFuelTypes, fuelLevelsMap, station.id) };
@@ -57,26 +78,20 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
         markerOptions
       ).bindPopup(formatPopupHTML(station, selectedFuelTypes))
       .on('click', () => {
-        onStationClick(station);
-        lastPopupStationId.current = station.id;
+        onStationClickRef.current(station);
+        popupMarker.ref = marker;
         marker.openPopup();
       });
 
-      clusterGroup.addLayer(marker);
+      clusterGroupRef.current.addLayer(marker);
     });
 
-    map.addLayer(clusterGroup);
-
     return () => {
-      map.removeLayer(clusterGroup);
+      if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
+        map.removeLayer(clusterGroupRef.current);
+      }
     };
-  }, [stations, onStationClick, selectedFuelTypes, selectedFuelType, map]);
-
-  useEffect(() => {
-    if (selectedStationId) {
-      lastPopupStationId.current = selectedStationId;
-    }
-  }, [selectedStationId]);
+  }, [dataKey, fuelKey, stations, selectedFuelTypes, selectedFuelType, map]);
 
   return null;
 }
