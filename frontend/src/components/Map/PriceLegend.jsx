@@ -1,15 +1,15 @@
 const FUEL_TYPES_ORDER = ['regular', 'super', 'diesel'];
 
-const FUEL_COLORS = {
-  regular: '#16a34a',
-  super: '#f97316',
-  diesel: '#dc2626',
-};
-
 const FUEL_LABELS = {
   regular: 'Régulier',
   super: 'Super',
   diesel: 'Diesel',
+};
+
+const PRICE_LEVEL_COLORS = {
+  low: '#16a34a',
+  medium: '#f97316',
+  high: '#dc2626',
 };
 
 function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
@@ -37,9 +37,9 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
         const sliceEnd = startAngle + sliceDeg;
 
         const gradient = `conic-gradient(
-          #d1d5db 0deg ${startAngle}deg,
-          ${FUEL_COLORS[fuelId]} ${startAngle}deg ${sliceEnd}deg,
-          #d1d5db ${sliceEnd}deg 360deg
+          #e5e7eb 0deg ${startAngle}deg,
+          #1f2937 ${startAngle}deg ${sliceEnd}deg,
+          #e5e7eb ${sliceEnd}deg 360deg
         )`;
 
         return (
@@ -51,6 +51,13 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
           </div>
         );
       })}
+
+      <div style={separatorStyle} />
+      <div style={keyStyle}>
+        <span style={keyItemStyle}><span style={{ ...keyDotStyle, background: PRICE_LEVEL_COLORS.low }} />Bas</span>
+        <span style={keyItemStyle}><span style={{ ...keyDotStyle, background: PRICE_LEVEL_COLORS.medium }} />Moyen</span>
+        <span style={keyItemStyle}><span style={{ ...keyDotStyle, background: PRICE_LEVEL_COLORS.high }} />Haut</span>
+      </div>
     </div>
   );
 }
@@ -111,6 +118,33 @@ const pieStyle = {
   inset: '0',
   borderRadius: '50%',
   border: '2px solid #000',
+};
+
+const separatorStyle = {
+  height: '1px',
+  background: '#e5e7eb',
+  margin: '10px 0',
+};
+
+const keyStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  fontSize: '11px',
+  color: '#6b7280',
+};
+
+const keyItemStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '3px',
+};
+
+const keyDotStyle = {
+  width: '8px',
+  height: '8px',
+  borderRadius: '50%',
+  flexShrink: '0',
 };
 
 export default PriceLegend;
