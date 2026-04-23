@@ -220,7 +220,7 @@ function AppContent()
             selectedFuelType={pricingFuelType}
           />
           {selectedStation && <MapController station={selectedStation} />}
-          {centerLocation?.source === 'city' && <CityZoomController city={centerLocation} />}
+          {centerLocation && <CityZoomController city={centerLocation} />}
         </MapContainer>
       </div>
     </div>

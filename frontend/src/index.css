@@ -20,6 +20,7 @@
   --accent-blue-dark: #2563eb;
   --pill-bg: #f3f4f6;
   --pill-active-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --accent-green: #16a34a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -223,6 +224,7 @@
   background: var(--bg);
   color: var(--text-primary);
   box-shadow: var(--pill-active-shadow);
+  border-left: 3px solid var(--accent-green);
 }
 
 .fuel-type-btn.active:hover {
@@ -233,10 +235,19 @@
   .fuel-type-btn.active {
     background: #1f2937;
     color: #f3f4f6;
+    border-left: 3px solid var(--accent-green);
   }
   .fuel-type-btn.active:hover {
     background: #374151;
   }
+}
+
+/* Leaflet zoom controls - move to bottom right */
+.leaflet-control-zoom {
+  top: auto !important;
+  bottom: 20px !important;
+  left: auto !important;
+  right: 20px !important;
 }
 
 /* Filter inputs section */
