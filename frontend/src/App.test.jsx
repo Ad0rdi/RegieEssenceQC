@@ -23,7 +23,7 @@ global.navigator.geolocation = {
 
 // Mock react-leaflet
 vi.mock('react-leaflet', () => ({
-  MapContainer: ({ children, center, zoom, style }) => <div data-testid="map-container" style={{height: '100%', width: '100%'}}>{children}</div>,
+  MapContainer: ({ children, center, zoom, style, zoomControl }) => <div data-testid="map-container" style={{height: '100%', width: '100%'}}>{children}</div>,
   TileLayer: () => <div data-testid="tile-layer" />,
   Marker: ({ position, children, eventHandlers }) => (
       <div data-testid="marker" data-position={position.join(',')}>
@@ -31,6 +31,7 @@ vi.mock('react-leaflet', () => ({
           </div>
         ),
   Popup: ({ children }) => <div data-testid="popup">{children}</div>,
+  ZoomControl: () => <div data-testid="zoom-control" />,
   useMap: () => ({ flyTo: vi.fn(), addLayer: vi.fn(), removeLayer: vi.fn(), getContainer: vi.fn(), on: vi.fn(), off: vi.fn(), panTo: vi.fn(), setView: vi.fn(), getZoom: vi.fn(), hasLayer: vi.fn().mockReturnValue(true), eachLayer: vi.fn() }),
 }));
 

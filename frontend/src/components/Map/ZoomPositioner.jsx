@@ -1,18 +1,9 @@
-import { useMap } from 'react-leaflet';
-import { useEffect } from 'react';
+import { ZoomControl } from 'react-leaflet';
 
 function ZoomPositioner() {
-  const map = useMap();
-
-  useEffect(() => {
-    const zoomControl = map.zoomControl;
-    if (zoomControl) {
-      map.removeControl(zoomControl);
-      map.addControl(zoomControl, 'bottomright');
-    }
-  }, [map]);
-
-  return null;
+  return (
+    <ZoomControl position='bottomright' />
+  );
 }
 
 export default ZoomPositioner;

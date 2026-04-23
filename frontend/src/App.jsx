@@ -206,6 +206,7 @@ function AppContent()
           wheelPxPerZoomLevel={WHEEL_PX_PER_ZOOM_LEVEL}
           zoomSnap={ZOOM_SNAP}
           zoomDelta={ZOOM_DELTA}
+          zoomControl={false}
           style={{ height: 'calc(100vh - 60px)', width: '100%' }}
         >
           <ZoomPositioner />
