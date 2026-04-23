@@ -136,39 +136,67 @@ function AppContent()
 
   const mapCenter = centerLocation ? [centerLocation.lat, centerLocation.lng] : DEFAULT_CENTER;
 
-  return (
+ return (
     <div className="app-container">
-      <header className="app-header">
-        <h1>Station Finder</h1>
-        <div className="filter-controls">
-          <button onClick={setGpsLocation} className="gps-btn">Use My Location</button>
+      <div className="app-header">
+        {/* Logo section */}
+        <div className="header-logo">
+          <div className="header-logo-icon">⛽</div>
+          <span className="header-logo-text">Station Finder</span>
+        </div>
+
+        <div className="header-divider" />
+
+        {/* Location section */}
+        <div className="header-location">
+          <button onClick={setGpsLocation} className="gps-btn">
+            <span>📍</span>
+            GPS
+          </button>
           <CitySearchInput onCitySelect={handleCitySelect} />
-          <FuelFilter />
-          <div className="filter-group">
-            <label htmlFor="max-price">Max Price ($):</label>
+        </div>
+
+        <div className="header-divider" />
+
+        {/* Fuel filter section */}
+        <FuelFilter />
+
+        <div className="header-divider" />
+
+        {/* Filters section */}
+        <div className="header-filters">
+          <div className="filter-input-group">
+            <label htmlFor="max-price">Prix max $</label>
             <input
               id="max-price"
               type="number"
               step="0.01"
               value={priceFilter.max === null ? '' : priceFilter.max}
               onChange={(e) => setPriceFilter(p => ({ ...p, max: e.target.value ? parseFloat(e.target.value) : null }))}
-              placeholder="Max Price"
+              placeholder="—"
             />
           </div>
-         <div className="filter-group">
-            <label htmlFor="radius">Radius (km):</label>
-              <input
-                id="radius"
-                type="number"
-                step="1"
-                value={radiusFilter !== null ? radiusFilter : ''}
-                onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) : null)}
-                placeholder="Radius km"
-              />
-           </div>
-          <button onClick={() => { setPriceFilter({ min: null, max: null }); setRadiusFilter(null); }} className="reset-btn">Reset Filters</button>
+          <div className="filter-input-group">
+            <label htmlFor="radius">Rayon km</label>
+            <input
+              id="radius"
+              type="number"
+              step="1"
+              value={radiusFilter !== null ? radiusFilter : ''}
+              onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) : null)}
+              placeholder="—"
+            />
+          </div>
         </div>
-       </header>
+
+        <div className="header-divider" />
+
+        {/* Reset section */}
+        <button onClick={() => { setPriceFilter({ min: null, max: null }); setRadiusFilter(null); }} className="reset-btn">
+          Réinitialiser
+        </button>
+      </div>
+
       <div className="map-container">
         <StationDrawer stations={filteredFeatures} onStationClick={handleStationClick} selectedStationId={selectedStationId} />
         <MapContainer
@@ -177,7 +205,7 @@ function AppContent()
           wheelPxPerZoomLevel={WHEEL_PX_PER_ZOOM_LEVEL}
           zoomSnap={ZOOM_SNAP}
           zoomDelta={ZOOM_DELTA}
-          style={{ height: 'calc(100vh - 150px)', width: '100%' }}
+          style={{ height: 'calc(100vh - 60px)', width: '100%' }}
         >
           <TileLayer
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'

@@ -64,7 +64,7 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
 
 const containerStyle = {
   position: 'absolute',
-  top: '16px',
+  top: '80px',
   left: '16px',
   zIndex: 1000,
   background: '#fff',
