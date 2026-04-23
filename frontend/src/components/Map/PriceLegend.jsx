@@ -1,89 +1,110 @@
-const PRICING_COLORS = {
-  low: '#16a34a',
-  medium: '#f97316',
-  high: '#dc2626',
+const FUEL_TYPES_ORDER = ['regular', 'super', 'diesel'];
+
+const FUEL_COLORS = {
+  regular: '#16a34a',
+  super: '#f97316',
+  diesel: '#dc2626',
 };
 
-const LEGEND_ITEMS = [
-  { color: PRICING_COLORS.low, label: 'Bas prix' },
-  { color: PRICING_COLORS.medium, label: 'Prix moyen' },
-  { color: PRICING_COLORS.high, label: 'Haut prix' },
-];
+function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
+  if (stations.length === 0) {
+    return (
+      <div style={containerStyle}>
+        <div style={titleStyle}>Prix au litre</div>
+        <div style={emptyStyle}>Aucune station</div>
+      </div>
+    );
+  }
 
-function PriceLegend() {
-  const containerStyle = {
-    position: 'absolute',
-    top: '16px',
-    left: '16px',
-    zIndex: 1000,
-    background: '#fff',
-    padding: '12px 16px',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-    fontSize: '13px',
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    minWidth: '170px',
-  };
+  const displayTypes = selectedFuelTypes.length > 0
+    ? selectedFuelTypes.filter(id => FUEL_TYPES_ORDER.includes(id))
+    : FUEL_TYPES_ORDER;
 
-  const titleStyle = {
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    fontSize: '11px',
-    color: '#374151',
-    letterSpacing: '0.5px',
-    marginBottom: '10px',
-  };
-
-  const rowStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    margin: '4px 0',
-  };
-
-  const dotStyle = (color) => ({
-    width: '16px',
-    height: '16px',
-    borderRadius: '50%',
-    background: color,
-    border: '2px solid #fff',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-    flexShrink: 0,
-  });
-
-  const labelStyle = {
-    color: '#1f2937',
-    fontSize: '12px',
-    marginLeft: '8px',
-  };
-
-  const separatorStyle = {
-    height: '1px',
-    background: '#e5e7eb',
-    margin: '10px 0',
-  };
-
-  const subtitleStyle = {
-    color: '#6b7280',
-    fontSize: '11px',
-    marginTop: '6px',
-  };
+  const sliceDeg = displayTypes.length > 0 ? 360 / displayTypes.length : 0;
 
   return (
     <div style={containerStyle}>
       <div style={titleStyle}>Prix au litre</div>
 
-      {LEGEND_ITEMS.map((item, index) => (
-        <div key={index} style={rowStyle}>
-          <div style={dotStyle(item.color)} />
-          <span style={labelStyle}>{item.label}</span>
-        </div>
-      ))}
+      {displayTypes.map((fuelId, index) => {
+        const startAngle = index * sliceDeg;
+        const sliceEnd = startAngle + sliceDeg;
 
-      <div style={separatorStyle} />
-      <div style={subtitleStyle}>Basé sur le carburant sélectionné</div>
+        const gradient = `conic-gradient(
+          #d1d5db 0deg ${startAngle}deg,
+          ${FUEL_COLORS[fuelId]} ${startAngle}deg ${sliceEnd}deg,
+          #d1d5db ${sliceEnd}deg 360deg
+        )`;
+
+        return (
+          <div key={fuelId} style={rowStyle}>
+            <span style={fuelLabelStyle}>{fuelId}</span>
+            <div style={pieWrapperStyle}>
+              <div style={{ ...pieStyle, background: gradient }} />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
+
+const containerStyle = {
+  position: 'absolute',
+  top: '16px',
+  left: '16px',
+  zIndex: 1000,
+  background: '#fff',
+  padding: '12px 16px',
+  borderRadius: '8px',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+  fontSize: '13px',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  minWidth: '200px',
+};
+
+const titleStyle = {
+  fontWeight: 'bold',
+  textTransform: 'uppercase',
+  fontSize: '11px',
+  color: '#374151',
+  letterSpacing: '0.5px',
+  marginBottom: '12px',
+};
+
+const emptyStyle = {
+  color: '#9ca3af',
+  fontSize: '12px',
+  textAlign: 'center',
+  padding: '20px 0',
+};
+
+const rowStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  margin: '6px 0',
+  gap: '10px',
+};
+
+const fuelLabelStyle = {
+  color: '#1f2937',
+  fontSize: '12px',
+  fontWeight: '500',
+  minWidth: '55px',
+};
+
+const pieWrapperStyle = {
+  position: 'relative',
+  width: '32px',
+  height: '32px',
+  flexShrink: '0',
+};
+
+const pieStyle = {
+  position: 'absolute',
+  inset: '0',
+  borderRadius: '50%',
+  border: '2px solid #000',
+};
 
 export default PriceLegend;
