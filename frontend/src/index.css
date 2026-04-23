@@ -242,20 +242,7 @@
   }
 }
 
-/* Leaflet zoom controls - move to bottom right */
-.leaflet-control-zoom {
-  position: absolute !important;
-  top: auto !important;
-  bottom: 20px !important;
-  left: auto !important;
-  right: 20px !important;
-  transform: none !important;
-  background: var(--bg-white) !important;
-  border-radius: var(--radius-md) !important;
-  box-shadow: var(--shadow-md) !important;
-  overflow: visible !important;
-}
-
+/* Leaflet zoom controls - positioned via JS ZoomPositioner */
 .leaflet-control-zoom a {
   width: 32px !important;
   height: 32px !important;
@@ -266,7 +253,7 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: var(--bg) !important;
+  background: var(--bg-white) !important;
   margin: 0 !important;
 }
 
@@ -284,9 +271,6 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .leaflet-control-zoom {
-    background: rgba(17, 24, 39, 0.95) !important;
-  }
   .leaflet-control-zoom a {
     color: #f3f4f6 !important;
     background: #1f2937 !important;
