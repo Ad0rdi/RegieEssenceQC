@@ -6,6 +6,12 @@ const FUEL_COLORS = {
   diesel: '#dc2626',
 };
 
+const FUEL_LABELS = {
+  regular: 'Régulier',
+  super: 'Super',
+  diesel: 'Diesel',
+};
+
 function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
   if (stations.length === 0) {
     return (
@@ -38,7 +44,7 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
 
         return (
           <div key={fuelId} style={rowStyle}>
-            <span style={fuelLabelStyle}>{fuelId}</span>
+            <span style={fuelLabelStyle}>{FUEL_LABELS[fuelId]}</span>
             <div style={pieWrapperStyle}>
               <div style={{ ...pieStyle, background: gradient }} />
             </div>
