@@ -12,6 +12,7 @@ import MapMarkers from './components/Map/MapMarkers';
 import PriceLegend from './components/Map/PriceLegend';
 import CitySearchInput from './components/Map/CitySearchInput';
 import CityZoomController from './components/Map/CityZoomController';
+import ZoomPositioner from './components/Map/ZoomPositioner';
 import { calculateDistance } from './utils/geolocation';
 import 'leaflet/dist/leaflet.css';
 
@@ -207,6 +208,7 @@ function AppContent()
           zoomDelta={ZOOM_DELTA}
           style={{ height: 'calc(100vh - 60px)', width: '100%' }}
         >
+          <ZoomPositioner />
           <TileLayer
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
