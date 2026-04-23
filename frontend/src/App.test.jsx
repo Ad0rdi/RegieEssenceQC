@@ -85,7 +85,7 @@ describe('App Component', () => {
         expect(screen.getByTestId('station-drawer')).toHaveAttribute('data-count', '3');
     });
     
-    const maxInput = screen.getByPlaceholderText(/Max Price/i);
+    const maxInput = screen.getByLabelText(/Prix max/i);
     
     fireEvent.change(maxInput, { target: { value: '2.0' } });
     
