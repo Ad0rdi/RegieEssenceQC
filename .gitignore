@@ -15,6 +15,7 @@ Thumbs.db
 # Editor/IDE
 .vscode/
 .idea/
+.opencode/
 *.swp
 *.swo
 
@@ -35,3 +36,5 @@ venv/
 
 #Docs
 docs/
+
+.superpowers/

@@ -17,7 +17,7 @@ function CitySearchInput({ onCitySelect }) {
   useEffect(() => {
     async function loadCities() {
       try {
-        const response = await fetch('/cities.json');
+        const response = await fetch(`${import.meta.env.BASE_URL}cities.json`);
         if (!response.ok) throw new Error('Failed to load cities');
         const data = await response.json();
         setCities(data);

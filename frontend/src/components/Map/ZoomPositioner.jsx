@@ -2,7 +2,9 @@ import { ZoomControl } from 'react-leaflet';
 
 function ZoomPositioner() {
   return (
-    <ZoomControl position='bottomright' />
+    <div className="leaflet-desktop-only">
+      <ZoomControl position='bottomright' />
+    </div>
   );
 }
 

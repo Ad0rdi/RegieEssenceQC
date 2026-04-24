@@ -1,7 +1,8 @@
 import { useMap } from 'react-leaflet';
 import { useEffect, useRef } from 'react';
+import L from 'leaflet';
 
-const MapController = ({ station }) => {
+const MapController = ({ station, source }) => {
   const map = useMap();
   const moveendHandlerRef = useRef(null);
   const popupStationRef = useRef(null);
@@ -9,18 +10,30 @@ const MapController = ({ station }) => {
   useEffect(() => {
     if (!station) return;
 
+    const currentCenter = map.getCenter();
     const currentZoom = map.getZoom();
     const targetZoom = 15;
 
-    // Skip zoom if already zoomed in — avoid panInside closing the popup
-    if (currentZoom >= targetZoom) {
-      return;
-    }
+    // Calculate actual distance in km between current center and station
+    const currentLatLng = L.latLng(currentCenter.lat, currentCenter.lng);
+    const targetLatLng = L.latLng(station.lat, station.lng);
+    const distanceKm = currentLatLng.distanceTo(targetLatLng) / 1000;
 
-    map.flyTo([station.lat, station.lng], targetZoom, {
-      duration: 1.0,
-      easeLinearity: 0.25
-    });
+    // Scale duration based on distance (base 0.5s, ~100km adds 1s)
+    const distanceDuration = 0.5 + distanceKm / 60;
+
+    // Drawer clicks always flyTo to zoom in; map clicks only pan if already zoomed in
+    const isDrawerClick = source === 'drawer';
+    const shouldZoom = isDrawerClick || currentZoom < targetZoom;
+
+    if (!shouldZoom && currentZoom >= targetZoom) {
+      map.panTo([station.lat, station.lng], { duration: 0.5 });
+    } else {
+      map.flyTo([station.lat, station.lng], targetZoom, {
+        duration: Math.min(distanceDuration, 5),
+        easeLinearity: 0.25
+      });
+    }
 
     // Store station to reopen popup after animation
     popupStationRef.current = station;
@@ -49,7 +62,7 @@ const MapController = ({ station }) => {
         map.off('moveend', moveendHandlerRef.current);
       }
     };
-  }, [station, map]);
+  }, [station, source, map]);
 
   return null;
 };
