@@ -4,6 +4,7 @@ import { useTheme } from './context/ThemeContext';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { useStations } from './hooks/useStations';
+import { useIsMobile } from './hooks/useIsMobile';
 import StationDrawer from './components/Map/StationDrawer';
 import FuelFilter from './components/Map/FuelFilter';
 import { MapContainer, TileLayer } from 'react-leaflet';
@@ -33,9 +34,9 @@ const WHEEL_PX_PER_ZOOM_LEVEL = 150;
 const ZOOM_SNAP = 0.25;
 const ZOOM_DELTA = 0.25;
 
-function AppContent()
- {
-   const { selectedFuelTypes, drawerOpen, setDrawerOpen } = useFilters();
+function AppContent() {
+  useIsMobile();
+  const { selectedFuelTypes, drawerOpen, setDrawerOpen } = useFilters();
    const { theme, toggleTheme } = useTheme();
   const pricingFuelType = selectedFuelTypes.length > 0 ? selectedFuelTypes[0] : 'regular';
   const { stations, loading, error } = useStations(selectedFuelTypes);

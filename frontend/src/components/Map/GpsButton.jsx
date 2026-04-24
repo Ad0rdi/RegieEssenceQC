@@ -38,9 +38,9 @@ export default function GpsButton({ onGpsClick }) {
         title="Ma position"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2" />
-          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2" fill="none" />
+          <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2" fill="none" />
         </svg>
       </button>
     </div>
