@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PriceLegend — Mini Pies dynamiques</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f3f4f6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 40px;
+    }
+
+    .panel {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      font-size: 14px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    /* ===== State selector ===== */
+    .state-selector {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+    .state-btn {
+      padding: 8px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .state-btn.active {
+      background: #374151;
+      color: #fff;
+      border-color: #374151;
+    }
+    .state-btn:hover:not(.active) { background: #f3f4f6; }
+
+    /* ===== NEW LEGEND ===== */
+    .new-legend {
+      background: #fff;
+      padding: 12px 16px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      font-size: 13px;
+      min-width: 200px;
+    }
+    .new-legend .title { font-weight: bold; text-transform: uppercase; font-size: 11px; color: #374151; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+    .new-legend .fuel-row {
+      display: flex;
+      align-items: center;
+      margin: 6px 0;
+      gap: 10px;
+    }
+
+    .new-legend .fuel-label {
+      color: #1f2937;
+      font-size: 12px;
+      font-weight: 500;
+      min-width: 55px;
+    }
+
+    .pie-wrapper {
+      position: relative;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+
+    .pie-wrapper .mini-pie {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid #000;
+    }
+
+    /* Separator lines showing fuel boundaries */
+    .pie-wrapper .sep-line {
+      position: absolute;
+      width: 2px;
+      height: 16px;
+      background: #fff;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      transform-origin: bottom center;
+    }
+
+    .new-legend .divider {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 10px 0;
+    }
+
+    .new-legend .legend-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .new-legend .legend-info .key-item {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .new-legend .legend-info .key-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .new-legend .legend-info .key-dot.green { background: #16a34a; }
+    .new-legend .legend-info .key-dot.orange { background: #f97316; }
+    .new-legend .legend-info .key-dot.red { background: #dc2626; }
+    .new-legend .legend-info .key-dot.gray { background: #d1d5db; border: 1px solid #9ca3af; }
+
+    .no-fuel .empty-msg {
+      color: #9ca3af;
+      font-size: 12px;
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .annotation {
+      font-size: 11px;
+      color: #6b7280;
+      font-style: italic;
+      text-align: center;
+      max-width: 360px;
+      margin-top: 12px;
+    }
+
+    /* Angular position labels */
+    .angle-labels {
+      font-size: 10px;
+      color: #9ca3af;
+      text-align: center;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="panel">
+    <h2>Nouveau design — Pies dynamiques</h2>
+    <div id="legend-container" class="new-legend"></div>
+    <div class="state-selector">
+      <button class="state-btn active" onclick="setState('all')">3 carburants (120° chacun)</button>
+      <button class="state-btn" onclick="setState('two')">2 carburants (180° chacun)</button>
+      <button class="state-btn" onclick="setState('one')">1 carburant (360°)</button>
+    </div>
+    <div class="angle-labels" id="angle-labels"></div>
+    <div class="annotation">Chaque pie est découpé en N parts égales (N = carburants sélectionnés). La portion colorée montre le ratio de stations qui ont ce carburant.</div>
+  </div>
+
+<script>
+const FUEL_TYPES = [
+  { id: 'regular', label: 'Régulier', color: '#000000' },
+  { id: 'super',   label: 'Super',   color: '#000000' },
+  { id: 'diesel',  label: 'Diesel',  color: '#000000' },
+];
+
+const states = {
+  all:   [...FUEL_TYPES],
+  two:   [FUEL_TYPES[0], FUEL_TYPES[2]], // Regular + Diesel
+  one:   [FUEL_TYPES[1]],               // Super only
+};
+
+function buildLegend(fuelTypes) {
+  const container = document.getElementById('legend-container');
+  const labels = document.getElementById('angle-labels');
+
+  if (fuelTypes.length === 0) {
+    container.className = 'new-legend no-fuel';
+    container.innerHTML = `<div class="empty-msg">Sélectionnez un carburant</div>`;
+    labels.textContent = '';
+    return;
+  }
+
+  const sliceDeg = 360 / fuelTypes.length;
+
+  let html = `<div class="title">Prix au litre</div>`;
+
+  fuelTypes.forEach((ft, index) => {
+    const startAngle = index * sliceDeg;
+    const fuelSliceEnd = startAngle + sliceDeg;
+
+    const grad = `conic-gradient(
+
+      #d1d5db 0deg ${startAngle}deg,
+      ${ft.color} ${startAngle}deg ${fuelSliceEnd}deg,
+      #d1d5db ${fuelSliceEnd}deg 360deg
+    )`;
+
+    html += `
+      <div class="fuel-row">
+        <span class="fuel-label">${ft.label}</span>
+        <div class="pie-wrapper">
+          <div class="mini-pie" style="background:${grad};"></div>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `<div class="divider"></div>`;
+  html += `<div class="legend-info">`;
+  html += `<span class="key-item"><span class="key-dot green"></span>Bas</span>`;
+  html += `<span class="key-item"><span class="key-dot orange"></span>Moyen</span>`;
+  html += `<span class="key-item"><span class="key-dot red"></span>Haut</span>`;
+  html += `</div>`;
+
+  container.className = 'new-legend';
+  container.innerHTML = html;
+
+  // Show angular positions
+  let labelHtml = fuelTypes.map((ft, i) => {
+    const start = i * sliceDeg;
+    const end = start + sliceDeg;
+    return `<span style="margin-right:12px">${ft.label}: ${start}°-${end}deg</span>`;
+  });
+  labels.innerHTML = labelHtml.join('');
+}
+
+function setState(type) {
+  document.querySelectorAll('.state-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const fuelTypes = states[type];
+
+  buildLegend(fuelTypes);
+}
+
+setState('all');
+</script>
+
+</body>
+</html>
