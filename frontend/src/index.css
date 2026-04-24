@@ -614,6 +614,30 @@ body[data-theme="dark"] .theme-toggle-btn {
   width: 100%;
 }
 
+.mobile .station-drawer .drawer-header-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.mobile .station-drawer .drawer-header-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-h);
+}
+
+.mobile .station-drawer .drawer-toggle {
+  font-size: 18px;
+  padding: 4px 8px;
+}
+
+body[data-theme="dark"] .station-drawer .drawer-toggle {
+  color: #f3f4f6;
+}
+
 .mobile .station-table th {
   padding: 8px 10px;
   font-size: 12px;
