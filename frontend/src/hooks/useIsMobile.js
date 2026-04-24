@@ -1,8 +1,26 @@
-import { useEffect } from 'react';
-import { useIsMobile as useIsMobileRaw } from 'react-device-detect';
+import { useState, useEffect } from 'react';
+
+const MOBILE_MAX_WIDTH = 767;
+
+function checkIsMobile() {
+  return typeof window !== 'undefined' && window.innerWidth <= MOBILE_MAX_WIDTH;
+}
 
 export function useIsMobile() {
-  const isMobile = useIsMobileRaw();
+  const [isMobile, setIsMobile] = useState(checkIsMobile);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(checkIsMobile());
+    };
+
+    window.addEventListener('resize', handleResize, { passive: true });
+    handleResize();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     if (isMobile) {
@@ -10,10 +28,6 @@ export function useIsMobile() {
     } else {
       document.body.classList.remove('mobile');
     }
-
-    return () => {
-      document.body.classList.remove('mobile');
-    };
   }, [isMobile]);
 
   return isMobile;
