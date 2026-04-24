@@ -1,3 +1,5 @@
+import { useTheme } from '../../context/ThemeContext';
+
 const FUEL_TYPES_ORDER = ['regular', 'super', 'diesel'];
 
 const FUEL_LABELS = {
@@ -12,12 +14,41 @@ const PRICE_LEVEL_COLORS = {
   high: '#dc2626',
 };
 
+const LIGHT = {
+  bg: '#fff',
+  text: '#6b7280',
+  titleText: '#374151',
+  emptyText: '#9ca3af',
+  fuelLabel: '#1f2937',
+  separator: '#e5e7eb',
+  pieBg: '#e5e7eb',
+  pieSlice: '#1f2937',
+  pieBorder: '#000',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+};
+
+const DARK = {
+  bg: '#16171d',
+  text: '#9ca3af',
+  titleText: '#f3f4f6',
+  emptyText: '#6b7280',
+  fuelLabel: '#f3f4f6',
+  separator: '#2e303a',
+  pieBg: '#374151',
+  pieSlice: '#9ca3af',
+  pieBorder: '#1f2937',
+  boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+};
+
 function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
+  const { theme } = useTheme();
+  const c = theme === 'dark' ? DARK : LIGHT;
+
   if (stations.length === 0) {
     return (
-      <div style={containerStyle}>
-        <div style={titleStyle}>Prix au litre</div>
-        <div style={emptyStyle}>Aucune station</div>
+      <div className="price-legend" style={{ position: 'absolute', top: '80px', left: '16px', zIndex: 1000, background: c.bg, padding: '12px 16px', borderRadius: '8px', boxShadow: c.boxShadow, fontSize: '13px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', minWidth: '200px' }}>
+        <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '11px', color: c.titleText, letterSpacing: '0.5px', marginBottom: '12px' }}>Prix au litre</div>
+        <div style={{ color: c.emptyText, fontSize: '12px', textAlign: 'center', padding: '20px 0' }}>Aucune station</div>
       </div>
     );
   }
@@ -29,122 +60,36 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
   const sliceDeg = displayTypes.length > 0 ? 360 / displayTypes.length : 0;
 
   return (
-    <div style={containerStyle}>
-      <div style={titleStyle}>Prix au litre</div>
+    <div className="price-legend" style={{ position: 'absolute', top: '80px', left: '16px', zIndex: 1000, background: c.bg, padding: '12px 16px', borderRadius: '8px', boxShadow: c.boxShadow, fontSize: '13px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', minWidth: '200px' }}>
+      <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '11px', color: c.titleText, letterSpacing: '0.5px', marginBottom: '12px' }}>Prix au litre</div>
 
       {displayTypes.map((fuelId, index) => {
         const startAngle = index * sliceDeg;
         const sliceEnd = startAngle + sliceDeg;
-
-        const gradient = `conic-gradient(
-          #e5e7eb 0deg ${startAngle}deg,
-          #1f2937 ${startAngle}deg ${sliceEnd}deg,
-          #e5e7eb ${sliceEnd}deg 360deg
+        const sliceGradient = `conic-gradient(
+          ${c.pieBg} 0deg ${startAngle}deg,
+          ${c.pieSlice} ${startAngle}deg ${sliceEnd}deg,
+          ${c.pieBg} ${sliceEnd}deg 360deg
         )`;
 
         return (
-          <div key={fuelId} style={rowStyle}>
-            <span style={fuelLabelStyle}>{FUEL_LABELS[fuelId]}</span>
-            <div style={pieWrapperStyle}>
-              <div style={{ ...pieStyle, background: gradient }} />
+          <div key={fuelId} style={{ display: 'flex', alignItems: 'center', margin: '6px 0', gap: '10px' }}>
+            <span style={{ color: c.fuelLabel, fontSize: '12px', fontWeight: '500', minWidth: '55px' }}>{FUEL_LABELS[fuelId]}</span>
+            <div style={{ position: 'relative', width: '32px', height: '32px', flexShrink: '0' }}>
+              <div style={{ position: 'absolute', inset: '0', borderRadius: '50%', border: '2px solid ' + c.pieBorder, background: sliceGradient }} />
             </div>
           </div>
         );
       })}
 
-      <div style={separatorStyle} />
-      <div style={keyStyle}>
-        <span style={keyItemStyle}><span style={{ ...keyDotStyle, background: PRICE_LEVEL_COLORS.low }} />Bas</span>
-        <span style={keyItemStyle}><span style={{ ...keyDotStyle, background: PRICE_LEVEL_COLORS.medium }} />Moyen</span>
-        <span style={keyItemStyle}><span style={{ ...keyDotStyle, background: PRICE_LEVEL_COLORS.high }} />Haut</span>
+      <div style={{ height: '1px', background: c.separator, margin: '10px 0' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: c.text }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: '0', background: PRICE_LEVEL_COLORS.low }} />Bas</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: '0', background: PRICE_LEVEL_COLORS.medium }} />Moyen</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: '0', background: PRICE_LEVEL_COLORS.high }} />Haut</span>
       </div>
     </div>
   );
 }
-
-const containerStyle = {
-  position: 'absolute',
-  top: '80px',
-  left: '16px',
-  zIndex: 1000,
-  background: '#fff',
-  padding: '12px 16px',
-  borderRadius: '8px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-  fontSize: '13px',
-  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-  minWidth: '200px',
-};
-
-const titleStyle = {
-  fontWeight: 'bold',
-  textTransform: 'uppercase',
-  fontSize: '11px',
-  color: '#374151',
-  letterSpacing: '0.5px',
-  marginBottom: '12px',
-};
-
-const emptyStyle = {
-  color: '#9ca3af',
-  fontSize: '12px',
-  textAlign: 'center',
-  padding: '20px 0',
-};
-
-const rowStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  margin: '6px 0',
-  gap: '10px',
-};
-
-const fuelLabelStyle = {
-  color: '#1f2937',
-  fontSize: '12px',
-  fontWeight: '500',
-  minWidth: '55px',
-};
-
-const pieWrapperStyle = {
-  position: 'relative',
-  width: '32px',
-  height: '32px',
-  flexShrink: '0',
-};
-
-const pieStyle = {
-  position: 'absolute',
-  inset: '0',
-  borderRadius: '50%',
-  border: '2px solid #000',
-};
-
-const separatorStyle = {
-  height: '1px',
-  background: '#e5e7eb',
-  margin: '10px 0',
-};
-
-const keyStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  fontSize: '11px',
-  color: '#6b7280',
-};
-
-const keyItemStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '3px',
-};
-
-const keyDotStyle = {
-  width: '8px',
-  height: '8px',
-  borderRadius: '50%',
-  flexShrink: '0',
-};
 
 export default PriceLegend;

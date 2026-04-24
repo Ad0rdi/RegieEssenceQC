@@ -23,24 +23,22 @@
   --accent-green: #16a34a;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-    --border-light: #374151;
-    --text-primary: #f3f4f6;
-    --text-secondary: #9ca3af;
-    --bg-white: rgba(17, 24, 39, 0.95);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 2px 12px rgba(0, 0, 0, 0.4);
-    --pill-bg: #1f2937;
-  }
+body[data-theme="dark"] {
+  --text: #9ca3af;
+  --text-h: #f3f4f6;
+  --bg: #16171d;
+  --border: #2e303a;
+  --code-bg: #1f2028;
+  --accent-bg: rgba(192, 132, 252, 0.15);
+  --shadow:
+    rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  --border-light: #374151;
+  --text-primary: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --bg-white: rgba(17, 24, 39, 0.95);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 12px rgba(0, 0, 0, 0.4);
+  --pill-bg: #1f2937;
 }
 
 /* App Header - Unified Top Bar */
@@ -61,10 +59,8 @@
   flex-wrap: wrap;
 }
 
-@media (prefers-color-scheme: dark) {
-  .app-header {
-    background: rgba(17, 24, 39, 0.95);
-  }
+body[data-theme="dark"] .app-header {
+  background: rgba(17, 24, 39, 0.95);
 }
 
 /* Section dividers */
@@ -102,10 +98,8 @@
   white-space: nowrap;
 }
 
-@media (prefers-color-scheme: dark) {
-  .header-logo-text {
-    color: #f3f4f6;
-  }
+body[data-theme="dark"] .header-logo-text {
+  color: #f3f4f6;
 }
 
 /* Location section (GPS + Search) */
@@ -136,11 +130,9 @@
   border-color: var(--accent-blue);
 }
 
-@media (prefers-color-scheme: dark) {
-  .gps-btn {
-    color: #f3f4f6;
-    background: #1f2937;
-  }
+body[data-theme="dark"] .gps-btn {
+  color: #f3f4f6;
+  background: #1f2937;
 }
 
 /* City search input - update existing */
@@ -204,11 +196,9 @@
   white-space: nowrap;
 }
 
-@media (prefers-color-scheme: dark) {
-  .fuel-type-btn {
-    color: var(--text-secondary);
-    background: transparent;
-  }
+body[data-theme="dark"] .fuel-type-btn {
+  color: var(--text-secondary);
+  background: transparent;
 }
 
 .fuel-type-btn:not(.active) {
@@ -231,15 +221,13 @@
   background: #f9fafb;
 }
 
-@media (prefers-color-scheme: dark) {
-  .fuel-type-btn.active {
-    background: #1f2937;
-    color: #f3f4f6;
-    border-left: 3px solid var(--accent-green);
-  }
-  .fuel-type-btn.active:hover {
-    background: #374151;
-  }
+body[data-theme="dark"] .fuel-type-btn.active {
+  background: #1f2937;
+  color: #f3f4f6;
+  border-left: 3px solid var(--accent-green);
+}
+body[data-theme="dark"] .fuel-type-btn.active:hover {
+  background: #374151;
 }
 
 /* Leaflet zoom controls - positioned via JS ZoomPositioner */
@@ -270,11 +258,16 @@
   background: var(--accent-bg) !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  .leaflet-control-zoom a {
-    color: #f3f4f6 !important;
-    background: #1f2937 !important;
-  }
+body[data-theme="dark"] .leaflet-control-zoom a {
+  color: #f3f4f6 !important;
+  background: var(--bg) !important;
+}
+
+body[data-theme="dark"] .leaflet-layer,
+body[data-theme="dark"] .leaflet-control-zoom-in,
+body[data-theme="dark"] .leaflet-control-zoom-out,
+body[data-theme="dark"] .leaflet-control-attribution {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }
 
 /* Filter inputs section */
@@ -331,14 +324,12 @@
   background: #fecaca;
 }
 
-@media (prefers-color-scheme: dark) {
-  .reset-btn {
-    background: #7f1d1d;
-    color: #fca5a5;
-  }
-  .reset-btn:hover {
-    background: #991b1b;
-  }
+body[data-theme="dark"] .reset-btn {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+body[data-theme="dark"] .reset-btn:hover {
+  background: #991b1b;
 }
 
 /* City search container - keep existing */
@@ -385,10 +376,8 @@
   color: #dc2626;
 }
 
-@media (prefers-color-scheme: dark) {
-  .error-message {
-    color: #f87171;
-  }
+body[data-theme="dark"] .error-message {
+  color: #f87171;
 }
 
 /* Station Drawer Styles */
@@ -522,4 +511,204 @@
   padding: 10px 8px;
   min-width: 60px;
   text-align: right;
+}
+
+/* Theme toggle button */
+.theme-toggle-btn {
+  padding: 6px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent-blue);
+}
+
+body[data-theme="dark"] .theme-toggle-btn {
+  background: #1f2937;
+}
+
+/* ========================================
+   MOBILE RESPONSIVE (≤ 767px)
+   Only applied when .mobile class is on body
+   ======================================== */
+
+/* --- Header adjustments --- */
+.mobile .app-header {
+  padding: 8px 10px;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  gap: 8px;
+}
+
+.mobile .header-logo-text {
+  font-size: 14px;
+}
+
+.mobile .header-logo-icon {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+
+.mobile .header-divider {
+  display: none;
+}
+
+.mobile .city-search-input {
+  min-width: 120px;
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+.mobile .gps-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.mobile .filter-input-group input {
+  width: 60px;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+
+.mobile .filter-input-group label {
+  font-size: 11px;
+}
+
+.mobile .fuel-type-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* --- Map container --- */
+.mobile .map-container {
+  height: calc(100vh - 52px);
+}
+
+/* --- Price Legend repositioning --- */
+.mobile .price-legend {
+  top: 120px;
+  right: 8px;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+/* --- Station Drawer (mobile) --- */
+.mobile .station-drawer {
+  left: 0;
+  right: 0;
+  min-width: unset;
+  bottom: 60px;
+  max-height: 50vh;
+  width: 100%;
+}
+
+.mobile .station-table th {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.mobile .station-table td {
+  padding: 8px 10px;
+}
+
+/* --- Floating GPS button --- */
+.leaflet-gps-btn-wrapper {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 999;
+  pointer-events: auto;
+}
+
+.leaflet-gps-btn {
+  background: var(--bg-white);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease;
+  padding: 0;
+  display: none; /* hidden on desktop */
+}
+
+.leaflet-gps-btn:hover {
+  background: var(--accent-bg);
+  transform: scale(1.05);
+}
+
+body[data-theme="dark"] .leaflet-gps-btn {
+  background: var(--bg);
+  color: #f3f4f6;
+}
+
+/* Show GPS button on mobile */
+.mobile .leaflet-gps-btn {
+  display: flex;
+}
+
+/* --- Floating Station button --- */
+.leaflet-station-btn-wrapper {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 999;
+  pointer-events: auto;
+}
+
+.leaflet-station-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.leaflet-station-btn:hover {
+  background: #2563eb;
+  transform: scale(1.03);
+}
+
+/* Hide station button on desktop */
+.leaflet-station-btn {
+  display: none;
+}
+
+/* Show station button on mobile */
+.mobile .leaflet-station-btn {
+  display: flex;
+}
+
+/* --- Desktop-only zoom controls --- */
+.leaflet-desktop-only {
+  display: block;
+}
+
+.mobile .leaflet-desktop-only {
+  display: none;
 }
