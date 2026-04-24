@@ -46,9 +46,9 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
 
   if (stations.length === 0) {
     return (
-      <div className="price-legend" style={{ position: 'absolute', top: '80px', left: '16px', zIndex: 1000, background: c.bg, padding: '12px 16px', borderRadius: '8px', boxShadow: c.boxShadow, fontSize: '13px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', minWidth: '200px' }}>
-        <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '11px', color: c.titleText, letterSpacing: '0.5px', marginBottom: '12px' }}>Prix au litre</div>
-        <div style={{ color: c.emptyText, fontSize: '12px', textAlign: 'center', padding: '20px 0' }}>Aucune station</div>
+   <div className="price-legend">
+        <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '11px', marginBottom: '12px' }}>Prix au litre</div>
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>Aucune station</div>
       </div>
     );
   }
@@ -60,8 +60,8 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
   const sliceDeg = displayTypes.length > 0 ? 360 / displayTypes.length : 0;
 
   return (
-    <div className="price-legend" style={{ position: 'absolute', top: '80px', left: '16px', zIndex: 1000, background: c.bg, padding: '12px 16px', borderRadius: '8px', boxShadow: c.boxShadow, fontSize: '13px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', minWidth: '200px' }}>
-      <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '11px', color: c.titleText, letterSpacing: '0.5px', marginBottom: '12px' }}>Prix au litre</div>
+    <div className="price-legend">
+       <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '11px', marginBottom: '12px' }}>Prix au litre</div>
 
       {displayTypes.map((fuelId, index) => {
         const startAngle = index * sliceDeg;
@@ -73,8 +73,8 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
         )`;
 
         return (
-          <div key={fuelId} style={{ display: 'flex', alignItems: 'center', margin: '6px 0', gap: '10px' }}>
-            <span style={{ color: c.fuelLabel, fontSize: '12px', fontWeight: '500', minWidth: '55px' }}>{FUEL_LABELS[fuelId]}</span>
+          <div key={fuelId} className="price-legend-fuel-row" style={{ display: 'flex', alignItems: 'center','justify-content': 'space-between', margin: '6px 0', gap: '10px' }}>
+            <span style={{ color: c.fuelLabel, fontSize: '12px', fontWeight: '500' }}>{FUEL_LABELS[fuelId]}</span>
             <div style={{ position: 'relative', width: '32px', height: '32px', flexShrink: '0' }}>
               <div style={{ position: 'absolute', inset: '0', borderRadius: '50%', border: '2px solid ' + c.pieBorder, background: sliceGradient }} />
             </div>

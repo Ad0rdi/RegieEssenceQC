@@ -55,18 +55,25 @@ body[data-theme="dark"] {
   position: absolute;
   top: 12px;
   left: 12px;
-  right: 12px;
   z-index: 1000;
   pointer-events: none;
   padding: 12px 16px;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 12px;
-  flex-wrap: wrap;
+  background: var(--bg-white);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  flex-direction: column;
 }
 
 .app-header > * {
   pointer-events: auto;
+}
+
+body[data-theme="dark"] .app-header {
+  background: rgba(17, 24, 39, 0);
 }
 
 /* Section dividers */
@@ -75,6 +82,7 @@ body[data-theme="dark"] {
   height: 32px;
   background: var(--border-light);
   flex-shrink: 0;
+  display: none;
 }
 
 /* Logo section */
@@ -129,6 +137,7 @@ body[data-theme="dark"] .header-logo-text {
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .gps-btn:hover {
@@ -147,7 +156,7 @@ body[data-theme="dark"] .gps-btn {
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
   font-size: 13px;
-  min-width: 180px;
+  width: 180px;
   background: var(--bg);
   color: var(--text-primary);
   transition: all 0.2s ease;
@@ -302,6 +311,7 @@ body[data-theme="dark"] .leaflet-control-attribution {
   border-radius: var(--radius-md);
   font-size: 13px;
   width: 70px;
+  flex-shrink: 0;
   background: var(--bg);
   color: var(--text-primary);
   transition: all 0.2s ease;
@@ -387,8 +397,15 @@ body[data-theme="dark"] .error-message {
 }
 
 .header-content {
-  pointer-events: none;
-  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.controls-frame {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* Price Legend - desktop: flows in flex header */
@@ -439,7 +456,8 @@ body[data-theme="dark"] .error-message {
 
 .station-drawer.collapsed {
   transform: translateY(calc(100% - 50px));
-  opacity: 0.8;
+  opacity: 0;
+  visibility: hidden;
 }
 
 .drawer-header {
@@ -580,10 +598,6 @@ body[data-theme="dark"] .theme-toggle-btn {
    ======================================== */
 
 /* --- App layout --- */
-.app-container {
-  overflow: hidden;
-}
-
 .mobile .app-container {
   display: flex;
   flex-direction: column;
@@ -611,6 +625,10 @@ body[data-theme="dark"] .theme-toggle-btn {
   left: 0;
   right: 0;
   gap: 0;
+  background: transparent;
+  backdrop-filter: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .mobile .header-content {
@@ -623,6 +641,7 @@ body[data-theme="dark"] .theme-toggle-btn {
   box-sizing: border-box;
   flex-wrap: nowrap;
   justify-content: space-between;
+  pointer-events: none;
 }
 
 .mobile .legend-frame {
@@ -636,9 +655,8 @@ body[data-theme="dark"] .theme-toggle-btn {
 .mobile .header-controls {
   flex: 0 1 auto;
   max-width: 340px;
+  pointer-events: auto;
 }
-
-
 
 body[data-theme="dark"] .mobile .controls-frame {
   background: rgba(17, 24, 39, 0.95);
@@ -649,11 +667,12 @@ body[data-theme="dark"] .mobile .header-content .price-legend {
 }
 
 .mobile .header-content .price-legend {
-  pointer-events: auto !important;
+  pointer-events: none !important;
 }
 
 .mobile .header-content .price-legend .price-legend-fuel-row {
-  margin: 8px 0 !important;
+  padding-left: 5px;
+  padding-right: 5px;
   font-size: 13px !important;
 }
 

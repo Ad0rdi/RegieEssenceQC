@@ -152,65 +152,68 @@ function AppContent() {
  return (
     <div className="app-container">
       <div className="app-header">
-        {/* Logo section */}
-        <div className="header-logo">
-          <div className="header-logo-icon">⛽</div>
-          <span className="header-logo-text">Station Finder</span>
-        </div>
+        <div className="header-content">
+          <div className="header-controls">
+            <div className="controls-frame">
+              <div className="header-logo">
+                <div className="header-logo-icon">⛽</div>
+                <span className="header-logo-text">Station Finder</span>
+              </div>
 
-        <div className="header-divider" />
+              <div className="header-divider" />
 
-        {/* Location section */}
-        <div className="header-location">
-          <CitySearchInput onCitySelect={handleCitySelect} />
-        </div>
+              <div className="header-location">
+                <CitySearchInput onCitySelect={handleCitySelect} />
+              </div>
 
-        <div className="header-divider" />
+              <div className="header-divider" />
 
-        {/* Fuel filter section */}
-        <FuelFilter />
+              <FuelFilter />
 
-        <div className="header-divider" />
+              <div className="header-divider" />
 
-        {/* Filters section */}
-        <div className="header-filters">
-          <div className="filter-input-group">
-            <label htmlFor="max-price">Prix max $</label>
-            <input
-              id="max-price"
-              type="number"
-              step="0.01"
-              value={priceFilter.max === null ? '' : priceFilter.max}
-              onChange={(e) => setPriceFilter(p => ({ ...p, max: e.target.value ? parseFloat(e.target.value) : null }))}
-              placeholder="—"
-            />
+              <div className="header-filters">
+                <div className="filter-input-group">
+                  <label htmlFor="max-price">Prix max $</label>
+                  <input
+                    id="max-price"
+                    type="number"
+                    step="0.01"
+                    value={priceFilter.max === null ? '' : priceFilter.max}
+                    onChange={(e) => setPriceFilter(p => ({ ...p, max: e.target.value ? parseFloat(e.target.value) : null }))}
+                    placeholder="—"
+                  />
+                </div>
+                <div className="filter-input-group">
+                  <label htmlFor="radius">Rayon km</label>
+                  <input
+                    id="radius"
+                    type="number"
+                    step="1"
+                    value={radiusFilter !== null ? radiusFilter : ''}
+                    onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) : null)}
+                    placeholder="—"
+                  />
+                </div>
+              </div>
+
+              <div className="header-divider" />
+
+              <button onClick={() => { setPriceFilter({ min: null, max: null }); setRadiusFilter(null); }} className="reset-btn">
+                Réinitialiser
+              </button>
+
+              <div className="header-divider" />
+
+              <button onClick={toggleTheme} className="theme-toggle-btn" title="Changer le thème">
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+            </div>
           </div>
-          <div className="filter-input-group">
-            <label htmlFor="radius">Rayon km</label>
-            <input
-              id="radius"
-              type="number"
-              step="1"
-              value={radiusFilter !== null ? radiusFilter : ''}
-              onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) : null)}
-              placeholder="—"
-            />
+          <div className="legend-frame">
+            <PriceLegend stations={filteredFeatures} selectedFuelTypes={selectedFuelTypes} />
           </div>
         </div>
-
-        <div className="header-divider" />
-
-        {/* Reset section */}
-        <button onClick={() => { setPriceFilter({ min: null, max: null }); setRadiusFilter(null); }} className="reset-btn">
-          Réinitialiser
-        </button>
-
-        <div className="header-divider" />
-
-        {/* Theme toggle */}
-        <button onClick={toggleTheme} className="theme-toggle-btn" title="Changer le thème">
-          {theme === 'dark' ? '☀️' : '🌙'}
-        </button>
       </div>
 
       <div className="map-container">
@@ -237,7 +240,6 @@ function AppContent() {
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <PriceLegend stations={filteredFeatures} selectedFuelTypes={selectedFuelTypes} />
           <MapMarkers
             stations={filteredFeatures}
             selectedStationId={selectedStationId}
