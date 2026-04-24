@@ -1,5 +1,6 @@
 import L from 'leaflet';
 import { FilterProvider, useFilters } from './context/FilterContext';
+import { useTheme } from './context/ThemeContext';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { useStations } from './hooks/useStations';
@@ -13,6 +14,8 @@ import PriceLegend from './components/Map/PriceLegend';
 import CitySearchInput from './components/Map/CitySearchInput';
 import CityZoomController from './components/Map/CityZoomController';
 import ZoomPositioner from './components/Map/ZoomPositioner';
+import GpsButton from './components/Map/GpsButton';
+import StationDrawerButton from './components/Map/StationDrawerButton';
 import { calculateDistance } from './utils/geolocation';
 import 'leaflet/dist/leaflet.css';
 
@@ -32,7 +35,8 @@ const ZOOM_DELTA = 0.25;
 
 function AppContent()
  {
-  const { selectedFuelTypes } = useFilters();
+   const { selectedFuelTypes, drawerOpen, setDrawerOpen } = useFilters();
+   const { theme, toggleTheme } = useTheme();
   const pricingFuelType = selectedFuelTypes.length > 0 ? selectedFuelTypes[0] : 'regular';
   const { stations, loading, error } = useStations(selectedFuelTypes);
   const [centerLocation, setCenterLocation] = useState(null);
@@ -196,6 +200,13 @@ function AppContent()
         <button onClick={() => { setPriceFilter({ min: null, max: null }); setRadiusFilter(null); }} className="reset-btn">
           Réinitialiser
         </button>
+
+        <div className="header-divider" />
+
+        {/* Theme toggle */}
+        <button onClick={toggleTheme} className="theme-toggle-btn" title="Changer le thème">
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
       </div>
 
       <div className="map-container">
@@ -210,6 +221,12 @@ function AppContent()
           style={{ height: 'calc(100vh - 60px)', width: '100%' }}
         >
           <ZoomPositioner />
+          <GpsButton onGpsClick={(loc) => setCenterLocation(loc)} />
+          <StationDrawerButton
+            stationCount={filteredFeatures.length}
+            drawerOpen={drawerOpen}
+            onToggle={() => setDrawerOpen(!drawerOpen)}
+          />
           <TileLayer
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

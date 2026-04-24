@@ -1,7 +1,7 @@
-import { useLeaflet } from 'react-leaflet';
+import { useMap } from 'react-leaflet';
 
 export default function GpsButton({ onGpsClick }) {
-  const { map } = useLeaflet();
+  const map = useMap();
 
   const handleGpsClick = () => {
     if (!navigator.geolocation) {
