@@ -14,8 +14,8 @@ import MapMarkers from './components/Map/MapMarkers';
 import PriceLegend from './components/Map/PriceLegend';
 import CitySearchInput from './components/Map/CitySearchInput';
 import CityZoomController from './components/Map/CityZoomController';
-import ZoomPositioner from './components/Map/ZoomPositioner';
 import GpsButton from './components/Map/GpsButton';
+import ZoomButtons from './components/Map/ZoomButtons';
 import StationDrawerButton from './components/Map/StationDrawerButton';
 import { calculateDistance } from './utils/geolocation';
 import 'leaflet/dist/leaflet.css';
@@ -35,7 +35,7 @@ const ZOOM_SNAP = 0.25;
 const ZOOM_DELTA = 0.25;
 
 function AppContent() {
-  useIsMobile();
+  const isMobile = useIsMobile();
   const { selectedFuelTypes, drawerOpen, setDrawerOpen } = useFilters();
    const { theme, toggleTheme } = useTheme();
   const pricingFuelType = selectedFuelTypes.length > 0 ? selectedFuelTypes[0] : 'regular';
@@ -43,7 +43,8 @@ function AppContent() {
   const [centerLocation, setCenterLocation] = useState(null);
    const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
    const [radiusFilter, setRadiusFilter] = useState(null);
-   const [selectedStationId, setSelectedStationId] = useState(null);
+  const [selectedStationId, setSelectedStationId] = useState(null);
+   const [selectedStationSource, setSelectedStationSource] = useState(null);
 
    const setGpsLocation = useCallback(() => {
      if (!navigator.geolocation) {
@@ -133,6 +134,12 @@ function AppContent() {
 
   const handleStationClick = (station) => {
     setSelectedStationId(station.id);
+    setSelectedStationSource('map');
+  };
+
+  const handleDrawerStationClick = (station) => {
+    setSelectedStationId(station.id);
+    setSelectedStationSource('drawer');
   };
 
   const selectedStation = useMemo(() => 
@@ -155,10 +162,6 @@ function AppContent() {
 
         {/* Location section */}
         <div className="header-location">
-          <button onClick={setGpsLocation} className="gps-btn">
-            <span>📍</span>
-            GPS
-          </button>
           <CitySearchInput onCitySelect={handleCitySelect} />
         </div>
 
@@ -211,7 +214,7 @@ function AppContent() {
       </div>
 
       <div className="map-container">
-        <StationDrawer stations={filteredFeatures} onStationClick={handleStationClick} selectedStationId={selectedStationId} />
+        <StationDrawer stations={filteredFeatures} onStationClick={handleDrawerStationClick} selectedStationId={selectedStationId} />
         <MapContainer
           center={mapCenter}
           zoom={DEFAULT_ZOOM}
@@ -221,8 +224,10 @@ function AppContent() {
           zoomControl={false}
           style={{ height: 'calc(100vh - 60px)', width: '100%' }}
         >
-          <ZoomPositioner />
-          <GpsButton onGpsClick={(loc) => setCenterLocation(loc)} />
+          <div className="leaflet-bottom-controls">
+            {!isMobile && <ZoomButtons />}
+            <GpsButton onGpsClick={(loc) => setCenterLocation(loc)} />
+          </div>
           <StationDrawerButton
             stationCount={filteredFeatures.length}
             drawerOpen={drawerOpen}
@@ -240,7 +245,7 @@ function AppContent() {
             selectedFuelTypes={selectedFuelTypes}
             selectedFuelType={pricingFuelType}
           />
-          {selectedStation && <MapController station={selectedStation} />}
+          {selectedStation && <MapController station={selectedStation} source={selectedStationSource} />}
           {centerLocation && <CityZoomController city={centerLocation} />}
         </MapContainer>
       </div>

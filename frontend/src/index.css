@@ -572,8 +572,7 @@ body[data-theme="dark"] .theme-toggle-btn {
 }
 
 .mobile .gps-btn {
-  padding: 4px 8px;
-  font-size: 11px;
+  display: none;
 }
 
 .mobile .filter-input-group input {
@@ -647,12 +646,61 @@ body[data-theme="dark"] .station-drawer .drawer-toggle {
   padding: 8px 10px;
 }
 
-/* --- Floating GPS button --- */
-.leaflet-gps-btn-wrapper {
+/* --- Floating bottom-right controls --- */
+.leaflet-bottom-controls {
   position: absolute;
   bottom: 12px;
-  left: 12px;
+  right: 12px;
   z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.leaflet-custom-zoom {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-light);
+}
+
+.leaflet-custom-zoom-btn {
+  background: var(--bg-white);
+  border: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.leaflet-custom-zoom-btn:first-child {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.leaflet-custom-zoom-btn:hover {
+  background: var(--accent-bg);
+}
+
+body[data-theme="dark"] .leaflet-custom-zoom-btn {
+  background: var(--bg);
+  color: #f3f4f6;
+}
+
+body[data-theme="dark"] .leaflet-custom-zoom {
+  border-color: var(--border-dark);
+}
+
+.leaflet-gps-btn-wrapper {
   pointer-events: auto;
 }
 
@@ -670,7 +718,6 @@ body[data-theme="dark"] .station-drawer .drawer-toggle {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   transition: all 0.2s ease;
   padding: 0;
-  display: none; /* hidden on desktop */
 }
 
 .leaflet-gps-btn:hover {
@@ -683,10 +730,7 @@ body[data-theme="dark"] .leaflet-gps-btn {
   color: #f3f4f6;
 }
 
-/* Show GPS button on mobile */
-.mobile .leaflet-gps-btn {
-  display: flex;
-}
+
 
 /* --- Floating Station button --- */
 .leaflet-station-btn-wrapper {
@@ -728,11 +772,4 @@ body[data-theme="dark"] .leaflet-gps-btn {
   display: flex;
 }
 
-/* --- Desktop-only zoom controls --- */
-.leaflet-desktop-only {
-  display: block;
-}
 
-.mobile .leaflet-desktop-only {
-  display: none;
-}

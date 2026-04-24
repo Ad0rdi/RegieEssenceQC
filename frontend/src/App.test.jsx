@@ -47,11 +47,34 @@ vi.mock('./components/Map/StationDrawer', () => ({
 vi.mock('./components/Map/FuelFilter', () => ({
   default: () => <div data-testid="fuel-filter" />,
 }));
+vi.mock('./components/Map/PriceLegend', () => ({
+  default: () => <div data-testid="price-legend" />,
+}));
+vi.mock('./components/Map/CitySearchInput', () => ({
+  default: ({ onCitySelect }) => <div data-testid="city-search" />,
+}));
+vi.mock('./components/Map/MapMarkers', () => ({
+  default: () => <div data-testid="map-markers" />,
+}));
+vi.mock('./components/Map/MapController', () => ({
+  default: () => null,
+}));
+vi.mock('./components/Map/CityZoomController', () => ({
+  default: () => null,
+}));
+vi.mock('./components/Map/ZoomPositioner', () => ({
+  default: () => null,
+}));
 
 // Mocking context
 vi.mock('./context/FilterContext', () => ({
   FilterProvider: ({ children }) => <div>{children}</div>,
   useFilters: () => ({ selectedFuelTypes: ['gasoline', 'diesel'] }),
+}));
+
+vi.mock('./context/ThemeContext', () => ({
+  ThemeProvider: ({ children }) => <div>{children}</div>,
+  useTheme: () => ({ theme: 'light', toggleTheme: vi.fn() }),
 }));
 
 // Mocking useStations hook
