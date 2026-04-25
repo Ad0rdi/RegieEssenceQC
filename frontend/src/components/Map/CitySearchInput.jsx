@@ -89,7 +89,7 @@ function CitySearchInput({ onCitySelect }) {
       <input
         ref={inputRef}
         type="text"
-        placeholder="Rechercher une ville du Québec..."
+        placeholder="Rechercher une ville"
         value={query}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}

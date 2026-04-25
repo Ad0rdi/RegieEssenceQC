@@ -225,7 +225,7 @@ function AppContent() {
           zoomSnap={ZOOM_SNAP}
           zoomDelta={ZOOM_DELTA}
           zoomControl={false}
-          style={{ height: 'calc(100vh - 60px)', width: '100%' }}
+          style={{ height: '100%', width: '100%' }}
         >
           <div className="leaflet-bottom-controls">
             {!isMobile && <ZoomButtons />}

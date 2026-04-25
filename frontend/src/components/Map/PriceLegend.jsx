@@ -45,9 +45,9 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
   const c = theme === 'dark' ? DARK : LIGHT;
 
   if (stations.length === 0) {
-    return (
-   <div className="price-legend">
-        <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '11px', marginBottom: '12px' }}>Prix au litre</div>
+   return (
+    <div className="price-legend">
+         <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '11px', marginBottom: '12px', color: c.titleText }}>Prix au litre</div>
         <div style={{ textAlign: 'center', padding: '20px 0' }}>Aucune station</div>
       </div>
     );
@@ -61,9 +61,9 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
 
   return (
     <div className="price-legend">
-       <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '11px', marginBottom: '12px' }}>Prix au litre</div>
+        <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '11px', marginBottom: '12px', color: c.titleText }}>Prix au litre</div>
 
-      {displayTypes.map((fuelId, index) => {
+       {displayTypes.map((fuelId, index) => {
         const startAngle = index * sliceDeg;
         const sliceEnd = startAngle + sliceDeg;
         const sliceGradient = `conic-gradient(
@@ -73,7 +73,7 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
         )`;
 
         return (
-          <div key={fuelId} className="price-legend-fuel-row" style={{ display: 'flex', alignItems: 'center','justify-content': 'space-between', margin: '6px 0', gap: '10px' }}>
+          <div key={fuelId} className="price-legend-fuel-row" style={{ display: 'flex', alignItems: 'center',justifyContent: 'space-between', margin: '6px 0', gap: '10px' }}>
             <span style={{ color: c.fuelLabel, fontSize: '12px', fontWeight: '500' }}>{FUEL_LABELS[fuelId]}</span>
             <div style={{ position: 'relative', width: '32px', height: '32px', flexShrink: '0' }}>
               <div style={{ position: 'absolute', inset: '0', borderRadius: '50%', border: '2px solid ' + c.pieBorder, background: sliceGradient }} />
