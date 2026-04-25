@@ -46,7 +46,7 @@ function AppContent() {
    const [radiusFilter, setRadiusFilter] = useState(null);
   const [selectedStationId, setSelectedStationId] = useState(null);
    const [selectedStationSource, setSelectedStationSource] = useState(null);
-   const [gpsWatchId, setGpsWatchId] = useState(null);
+ 
 
    const setGpsLocation = useCallback(() => {
      if (!navigator.geolocation) {
@@ -76,46 +76,46 @@ function AppContent() {
    }, []);
 
     // Initialize GPS on mount: request position + start watching
-    useEffect(() => {
-      if (!navigator.geolocation) return;
+     useEffect(() => {
+       if (!navigator.geolocation) return;
+       let watchId = null;
 
-      const initGPS = () => {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            if (position.coords.accuracy <= 100) {
-              setCenterLocation({
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-              });
-            }
-          },
-          () => { /* denied/timeout: keep last known, ignore silently */ },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
+       const initGPS = () => {
+         navigator.geolocation.getCurrentPosition(
+           (position) => {
+             if (position.coords.accuracy <= 100) {
+               setCenterLocation({
+                 lat: position.coords.latitude,
+                 lng: position.coords.longitude,
+                 accuracy: position.coords.accuracy,
+               });
+             }
+           },
+           () => { /* denied/timeout: keep last known, ignore silently */ },
+           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+         );
 
-        const watchId = navigator.geolocation.watchPosition(
-          (position) => {
-            if (position.coords.accuracy <= 100) {
-              setCenterLocation((prev) =>
-                prev ? { ...prev, lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy } : null
-              );
-            }
-          },
-          () => { /* ignore: keep last known location */ },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-        setGpsWatchId(watchId);
-      };
+         watchId = navigator.geolocation.watchPosition(
+           (position) => {
+             if (position.coords.accuracy <= 100) {
+               setCenterLocation((prev) =>
+                 prev ? { ...prev, lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy } : prev
+               );
+             }
+           },
+           () => { /* ignore: keep last known location */ },
+           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+         );
+       };
 
-      initGPS();
+       initGPS();
 
-      return () => {
-        if (watchId !== null) {
-          navigator.geolocation.clearWatch(watchId);
-        }
-      };
-    }, []);
+       return () => {
+         if (watchId !== null) {
+           navigator.geolocation.clearWatch(watchId);
+         }
+       };
+     }, []);
 
     const handleCitySelect = useCallback((location) => {
      setCenterLocation(location);
