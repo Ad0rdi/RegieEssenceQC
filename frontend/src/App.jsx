@@ -8,9 +8,10 @@ import { useIsMobile } from './hooks/useIsMobile';
 import StationDrawer from './components/Map/StationDrawer';
 import FuelFilter from './components/Map/FuelFilter';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import MapController from './components/Map/MapController';
 import MapMarkers from './components/Map/MapMarkers';
+import UserLocationMarker from './components/Map/UserLocationMarker';
 import PriceLegend from './components/Map/PriceLegend';
 import CitySearchInput from './components/Map/CitySearchInput';
 import CityZoomController from './components/Map/CityZoomController';
@@ -45,6 +46,7 @@ function AppContent() {
    const [radiusFilter, setRadiusFilter] = useState(null);
   const [selectedStationId, setSelectedStationId] = useState(null);
    const [selectedStationSource, setSelectedStationSource] = useState(null);
+   const [gpsWatchId, setGpsWatchId] = useState(null);
 
    const setGpsLocation = useCallback(() => {
      if (!navigator.geolocation) {
@@ -53,11 +55,13 @@ function AppContent() {
      }
      navigator.geolocation.getCurrentPosition(
        (position) => {
-         setCenterLocation({
-           lat: position.coords.latitude,
-           lng: position.coords.longitude,
-           source: 'gps'
-         });
+         if (position.coords.accuracy <= 100) {
+           setCenterLocation({
+             lat: position.coords.latitude,
+             lng: position.coords.longitude,
+             accuracy: position.coords.accuracy,
+           });
+         }
        },
        (err) => {
          const messages = {
@@ -71,7 +75,49 @@ function AppContent() {
      );
    }, []);
 
-   const handleCitySelect = useCallback((location) => {
+    // Initialize GPS on mount: request position + start watching
+    useEffect(() => {
+      if (!navigator.geolocation) return;
+
+      const initGPS = () => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            if (position.coords.accuracy <= 100) {
+              setCenterLocation({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+              });
+            }
+          },
+          () => { /* denied/timeout: keep last known, ignore silently */ },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+
+        const watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            if (position.coords.accuracy <= 100) {
+              setCenterLocation((prev) =>
+                prev ? { ...prev, lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy } : null
+              );
+            }
+          },
+          () => { /* ignore: keep last known location */ },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+        setGpsWatchId(watchId);
+      };
+
+      initGPS();
+
+      return () => {
+        if (watchId !== null) {
+          navigator.geolocation.clearWatch(watchId);
+        }
+      };
+    }, []);
+
+    const handleCitySelect = useCallback((location) => {
      setCenterLocation(location);
    }, []);
 
@@ -229,7 +275,7 @@ function AppContent() {
         >
           <div className="leaflet-bottom-controls">
             {!isMobile && <ZoomButtons />}
-            <GpsButton onGpsClick={(loc) => setCenterLocation(loc)} />
+            <GpsButton onGpsClick={() => setGpsLocation()} />
           </div>
           <StationDrawerButton
             stationCount={filteredFeatures.length}
@@ -240,6 +286,7 @@ function AppContent() {
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          {centerLocation && <UserLocationMarker location={centerLocation} />}
           <MapMarkers
             stations={filteredFeatures}
             selectedStationId={selectedStationId}
