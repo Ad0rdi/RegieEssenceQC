@@ -118,9 +118,9 @@ useEffect(() => {
        };
      }, []);
 
-    const handleCitySelect = useCallback((location) => {
-     setCenterLocation(location);
-   }, []);
+   const handleLocationSelect = useCallback((location) => {
+      setCenterLocation(location);
+    }, []);
 
   // --- Filtering Logic ---
   const filteredFeatures = useMemo(() => {
@@ -214,7 +214,7 @@ useEffect(() => {
               <div className="header-divider" />
 
               <div className="header-location">
-                <CitySearchInput onCitySelect={handleCitySelect} />
+                <CitySearchInput onCitySelect={handleLocationSelect} />
               </div>
 
               <div className="header-divider" />
