@@ -55,45 +55,7 @@ function AppContent() {
   const setGpsLocation = useCallback((position) => {
     if (position) {
       setCenterLocation(position);
-      return;
     }
-    if (!navigator.geolocation) {
-      alert("La géolocalisation n'est pas supportée par ce navigateur.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCenterLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-        });
-      },
-      (err) => {
-        if (err.code === 3) {
-          navigator.geolocation.getCurrentPosition(
-            (retryPosition) => {
-              setCenterLocation({
-                lat: retryPosition.coords.latitude,
-                lng: retryPosition.coords.longitude,
-                accuracy: retryPosition.coords.accuracy,
-              });
-            },
-            () => {},
-            { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
-          );
-          return;
-        }
-        const messages = {
-          1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
-          2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
-        };
-        if (err.code !== 3) {
-          alert(messages[err.code] || `Erreur de géolocalisation: ${err.message}`);
-        }
-      },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-    );
   }, []);
 
   useEffect(() => {

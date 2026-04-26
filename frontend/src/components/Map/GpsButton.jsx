@@ -1,15 +1,7 @@
-import { useMap } from 'react-leaflet';
 import { useRef } from 'react';
-
-const GPS_MESSAGES = {
-  1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
-  2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
-  3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
-};
 
 export default function GpsButton({ onGpsClick }) {
   const map = useMap();
-  const isRetryingRef = useRef(false);
   const successReceivedRef = useRef(false);
 
   const showPosition = (position) => {
@@ -22,23 +14,6 @@ export default function GpsButton({ onGpsClick }) {
 
   const handleError = (err) => {
     if (successReceivedRef.current) return;
-
-    if (err.code === 3 && !isRetryingRef.current) {
-      isRetryingRef.current = true;
-      navigator.geolocation.getCurrentPosition(
-        (retryPosition) => {
-          showPosition(retryPosition);
-        },
-        (finalErr) => {
-          isRetryingRef.current = false;
-        },
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
-      );
-      return;
-    }
-    isRetryingRef.current = false;
-    const msg = GPS_MESSAGES[err.code] || `Erreur de géolocalisation: ${err.message}`;
-    alert(msg);
   };
 
   const handleGpsClick = () => {
@@ -47,10 +22,30 @@ export default function GpsButton({ onGpsClick }) {
       return;
     }
 
+    const timeoutRef = setTimeout(() => {
+      if (successReceivedRef.current) return;
+      navigator.geolocation.getCurrentPosition(
+        showPosition,
+        handleError,
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+      );
+    }, 3000);
+
     navigator.geolocation.getCurrentPosition(
-      showPosition,
-      handleError,
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      (pos) => {
+        clearTimeout(timeoutRef);
+        showPosition(pos);
+      },
+      (err) => {
+        clearTimeout(timeoutRef);
+        if (successReceivedRef.current) return;
+        navigator.geolocation.getCurrentPosition(
+          showPosition,
+          handleError,
+          { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+        );
+      },
+      { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 }
     );
   };
 
