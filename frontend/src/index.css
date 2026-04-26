@@ -168,6 +168,11 @@ body[data-theme="dark"] .gps-btn {
   background: var(--bg);
   color: var(--text-primary);
   transition: all 0.2s ease;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .city-search-input:focus {

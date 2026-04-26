@@ -58,29 +58,13 @@ function AppContent() {
     }
   }, []);
 
-  useEffect(() => {
-   const handleContext = (e) => {
-      if (e.target?.matches?.('.filter-input-select, .city-search-input')) {
-        e.preventDefault();
-      }
+useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
     };
-    const handleSelectStart = (e) => {
-      if (e.target?.matches?.('.filter-input-select, .city-search-input')) {
-        e.preventDefault();
-      }
-    };
-    const handleDragStart = (e) => {
-      if (e.target?.matches?.('.filter-input-select, .city-search-input')) {
-        e.preventDefault();
-      }
-    };
-    document.addEventListener('contextmenu', handleContext);
-    document.addEventListener('selectstart', handleSelectStart);
-    document.addEventListener('dragstart', handleDragStart);
+    document.addEventListener('contextmenu', handler);
     return () => {
-      document.removeEventListener('contextmenu', handleContext);
-      document.removeEventListener('selectstart', handleSelectStart);
-      document.removeEventListener('dragstart', handleDragStart);
+      document.removeEventListener('contextmenu', handler);
     };
   }, []);
 
@@ -254,7 +238,8 @@ function AppContent() {
                       value={radiusFilter !== null ? radiusFilter : ''}
                       onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) : null)}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                      onFocus={(e) => { e.target.select(); }}
+                      onFocus={(e) => { e.target.style.userSelect = 'text'; e.target.style.webkitUserSelect = 'text'; e.target.select(); }}
+                      onBlur={(e) => { e.target.style.userSelect = ''; e.target.style.webkitUserSelect = ''; }}
                       placeholder="—"
                     />
                   </div>
@@ -269,7 +254,8 @@ function AppContent() {
                             value={priceFilter.max === null ? '' : priceFilter.max}
                             onChange={(e) => setPriceFilter(p => ({ ...p, max: e.target.value === '' ? null : parseFloat(e.target.value) }))}
                             onKeyDown={(e) => { if (e.key === 'Enter') { e.target.blur(); } }}
-                            onFocus={(e) => e.target.select()}
+                            onFocus={(e) => { e.target.style.userSelect = 'text'; e.target.style.webkitUserSelect = 'text'; e.target.select(); }}
+                            onBlur={(e) => { e.target.style.userSelect = ''; e.target.style.webkitUserSelect = ''; }}
                             placeholder="—"
                         />
                     </div>

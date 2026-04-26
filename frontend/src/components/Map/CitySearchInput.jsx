@@ -154,7 +154,18 @@ function CitySearchInput({ onCitySelect }) {
   }, [results, handleSelect]);
 
   const handleFocus = useCallback(() => {
-    inputRef.current?.select();
+    if (inputRef.current) {
+      inputRef.current.style.userSelect = 'text';
+      inputRef.current.style.webkitUserSelect = 'text';
+      inputRef.current.select();
+    }
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    if (inputRef.current) {
+      inputRef.current.style.userSelect = '';
+      inputRef.current.style.webkitUserSelect = '';
+    }
   }, []);
 
   return (
@@ -167,6 +178,7 @@ function CitySearchInput({ onCitySelect }) {
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
+        onBlur={handleBlur}
         className="city-search-input"
       />
       {loading && <div className="search-loading">Chargement...</div>}
