@@ -197,11 +197,10 @@ function CitySearchInput({ onCitySelect }) {
     if (trimmed.length < 2) return;
 
     setPreciseResults([]);
-    setShowPreciseDropdown(false);
+    setShowPreciseDropdown(true);
 
     const results = await nominatimSearch(trimmed);
     setPreciseResults(results);
-    setShowPreciseDropdown(results.length > 0);
   }, [query, nominatimSearch]);
 
   const handlePreciseKeyDown = useCallback((e) => {
