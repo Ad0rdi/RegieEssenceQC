@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useNominatimSearch } from '../../utils/nominatimSearch';
 
 const SEARCH_DELAY = 300;
 
@@ -24,6 +25,10 @@ function CitySearchInput({ onCitySelect }) {
   const [error, setError] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [cities, setCities] = useState([]);
+  const { search: nominatimSearch, isSearching: isPreciseSearching, error: nominatimError } = useNominatimSearch();
+  const [isPreciseMode, setIsPreciseMode] = useState(false);
+  const [preciseResults, setPreciseResults] = useState([]);
+  const [showPreciseDropdown, setShowPreciseDropdown] = useState(false);
   const searchTimeoutRef = useRef(null);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -139,17 +144,27 @@ function CitySearchInput({ onCitySelect }) {
     }, SEARCH_DELAY);
   }, [cities]);
 
-  const handleSelect = useCallback((result) => {
+  const resetToCityMode = useCallback(() => {
+    setIsPreciseMode(false);
+    setPreciseResults([]);
+    setShowPreciseDropdown(false);
+  }, []);
+
+  const handleSelect = useCallback((result, source) => {
     const lat = parseFloat(result.lat);
-    const lng = parseFloat(result.lon);
-    onCitySelect({ lat, lng, source: 'city' }, result.name);
-    setQuery(result.name);
+    const lng = parseFloat(result.lng ?? result.lon);
+    onCitySelect({ lat, lng, source }, result.name || result.display_name || query);
+    setQuery(result.name || result.display_name || query);
     setShowDropdown(false);
-  }, [onCitySelect]);
+    setShowPreciseDropdown(false);
+    if (source === 'address') {
+      resetToCityMode();
+    }
+  }, [onCitySelect, query, resetToCityMode]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && results.length > 0) {
-      handleSelect(results[0]);
+      handleSelect(results[0], 'city');
     }
   }, [results, handleSelect]);
 
@@ -168,19 +183,69 @@ function CitySearchInput({ onCitySelect }) {
     }
   }, []);
 
+  const togglePreciseMode = useCallback(() => {
+    setIsPreciseMode(prev => !prev);
+    setPreciseResults([]);
+    setShowPreciseDropdown(false);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+  }, []);
+
+  const handlePreciseSearch = useCallback(async () => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) return;
+
+    setPreciseResults([]);
+    setShowPreciseDropdown(false);
+
+    const results = await nominatimSearch(trimmed);
+    setPreciseResults(results);
+    setShowPreciseDropdown(results.length > 0);
+  }, [query, nominatimSearch]);
+
+  const handlePreciseKeyDown = useCallback((e) => {
+    if (e.key === 'Enter') {
+      handlePreciseSearch();
+    }
+  }, [handlePreciseSearch]);
+
   return (
     <div className="city-search-container" ref={dropdownRef}>
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder="Rechercher une ville"
-        value={query}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        className="city-search-input"
-      />
+      <div className="city-search-wrapper">
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder={isPreciseMode ? 'Rechercher une adresse' : 'Rechercher une ville'}
+          value={query}
+          onChange={handleInputChange}
+          onKeyDown={isPreciseMode ? handlePreciseKeyDown : handleKeyDown}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          className="city-search-input"
+        />
+        {isPreciseMode && (
+          <button
+            onClick={handlePreciseSearch}
+            disabled={!query.trim() || isPreciseSearching}
+            className="precise-search-btn"
+            title="Rechercher"
+          >
+            {isPreciseSearching ? (
+              <span className="search-spinner">⏳</span>
+            ) : (
+              <span className="search-icon">🔍</span>
+            )}
+          </button>
+        )}
+        <button
+          onClick={togglePreciseMode}
+          className="precise-mode-toggle"
+          title={isPreciseMode ? 'Mode villes' : 'Mode précis'}
+        >
+          {isPreciseMode ? '🏙️' : '📍'}
+        </button>
+      </div>
       {loading && <div className="search-loading">Chargement...</div>}
       {error && <div className="error-message">{error}</div>}
       {!loading && !error && showDropdown && results.length > 0 && (
@@ -188,7 +253,7 @@ function CitySearchInput({ onCitySelect }) {
           {results.map((result, index) => (
             <li
               key={index}
-              onClick={() => handleSelect(result)}
+              onClick={() => handleSelect(result, 'city')}
               className="city-search-item"
             >
               {result.name}, {result.region}
@@ -200,6 +265,30 @@ function CitySearchInput({ onCitySelect }) {
         <div className="city-search-dropdown">
           <div className="no-results">Aucune ville trouvée</div>
         </div>
+      )}
+      {isPreciseMode && (
+        <>
+          {nominatimError && <div className="error-message">{nominatimError}</div>}
+          {showPreciseDropdown && preciseResults.length > 0 && (
+            <ul className="city-search-dropdown">
+              {preciseResults.map((result, index) => (
+                <li
+                  key={index}
+                  onClick={() => handleSelect(result, 'address')}
+                  className="city-search-item"
+                  title={result.display_name}
+                >
+                  {result.name || result.display_name}
+                </li>
+              ))}
+            </ul>
+          )}
+          {showPreciseDropdown && preciseResults.length === 0 && !isPreciseSearching && (
+            <div className="city-search-dropdown">
+              <div className="no-results">Aucun résultat trouvé</div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
