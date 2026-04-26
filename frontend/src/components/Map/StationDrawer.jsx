@@ -3,7 +3,7 @@ import { useFilters } from '../../context/FilterContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import StationTable from './StationTable';
 
-const StationDrawer = ({ stations, onStationClick, selectedStationId }) => {
+const StationDrawer = ({ stations, onStationClick, selectedStationId, centerLocation }) => {
   const { drawerOpen, setDrawerOpen, selectedFuelTypes } = useFilters();
   const isMobile = useIsMobile();
 
@@ -31,7 +31,7 @@ const StationDrawer = ({ stations, onStationClick, selectedStationId }) => {
       )}
       {drawerOpen && (
         <div className="drawer-content">
-          <StationTable stations={stations} onStationClick={handleStationClick} selectedStationId={selectedStationId} selectedFuelTypes={selectedFuelTypes} />
+          <StationTable stations={stations} onStationClick={handleStationClick} selectedStationId={selectedStationId} selectedFuelTypes={selectedFuelTypes} centerLocation={centerLocation} />
         </div>
       )}
     </div>

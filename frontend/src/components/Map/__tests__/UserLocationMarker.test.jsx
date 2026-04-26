@@ -3,19 +3,46 @@ import { render } from '@testing-library/react';
 import UserLocationMarker from '../UserLocationMarker';
 
 const mockCircle = { addTo: vi.fn(() => mockCircle), remove: vi.fn() };
-const mockCircleMarker = { addTo: vi.fn(() => mockCircleMarker), remove: vi.fn() };
+const mockCircleMarker = { addTo: vi.fn(() => mockCircleMarker), remove: vi.fn(), bringToFront: vi.fn(), getElement: vi.fn(() => mockDotElement) };
+const mockDotElement = { style: {} };
+const mockPane = { style: {} };
+const mockLatLng = { lat: 0, lng: 0 };
+const mockCenterPoint = { x: 100, y: 100 };
+const mockNorthPoint = { x: 100, y: 250 };
+
+let latLngCallCount = 0;
+let paneCreated = false;
 
 const mockMap = {
   hasLayer: vi.fn(() => false),
   removeLayer: vi.fn(),
   addLayer: vi.fn(),
   whenCreated: vi.fn(),
+  latLngToLayerPoint: vi.fn(() => {
+    latLngCallCount++;
+    return latLngCallCount % 2 === 1 ? mockCenterPoint : mockNorthPoint;
+  }),
+  containerPointToLatLng: vi.fn(() => mockLatLng),
+  getPane: vi.fn((name) => {
+    if (name === 'gps-marker-pane' && paneCreated) return mockPane;
+    return null;
+  }),
+  createPane: vi.fn((name) => {
+    if (name === 'gps-marker-pane') {
+      paneCreated = true;
+      return mockPane;
+    }
+    return null;
+  }),
 };
 
 vi.mock('leaflet', () => ({
   default: {
     circle: vi.fn(() => mockCircle),
     circleMarker: vi.fn(() => mockCircleMarker),
+    latLng: vi.fn((lat, lng) => ({ lat, lng })),
+    point: vi.fn((x, y) => ({ x, y, add: (dx, dy) => ({ x: x + dx, y: y + dy }) })),
+    DomEvent: { disableClickPropagation: vi.fn() },
   },
 }));
 
@@ -32,6 +59,7 @@ function createLocation(overrides = {}) {
 describe('UserLocationMarker', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    latLngCallCount = 0;
   });
 
   afterEach(() => {
@@ -60,6 +88,7 @@ describe('UserLocationMarker', () => {
       fillOpacity: 0.15,
       weight: 1,
       opacity: 0.3,
+      pane: 'gps-marker-pane',
     });
 
     expect(mockL.default.circleMarker).toHaveBeenCalledWith([45.5, -73.5], {
@@ -69,6 +98,7 @@ describe('UserLocationMarker', () => {
       fillOpacity: 0.9,
       weight: 2,
       opacity: 1,
+      pane: 'gps-marker-pane',
     });
   });
 

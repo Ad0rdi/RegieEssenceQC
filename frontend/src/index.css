@@ -356,18 +356,18 @@ body[data-theme="dark"] .reset-btn:hover {
   background: #991b1b;
 }
 
-/* City search container - keep existing */
+/* City search container */
 .city-search-container {
   position: relative;
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
+  gap: 2px;
 }
 
 /* City search dropdown items */
 .city-search-item {
-  padding: 8px 12px;
+  padding: 6px 10px;
   cursor: pointer;
   border-bottom: 1px solid var(--border-light);
   color: var(--text);
@@ -726,6 +726,15 @@ body[data-theme="dark"] .mobile .header-content .price-legend {
   flex-shrink: 0;
 }
 
+.mobile .city-search-item {
+  font-size: 11px;
+  padding: 6px 10px;
+}
+
+.mobile .city-search-dropdown {
+  min-width: 200px;
+}
+
 .mobile .controls-frame .gps-btn {
   display: none;
 }
@@ -790,11 +799,12 @@ body[data-theme="dark"] .station-drawer .drawer-toggle {
 
 .mobile .station-table th {
   padding: 8px 10px;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .mobile .station-table td {
   padding: 8px 10px;
+  font-size: 11px;
 }
 
 /* --- Floating bottom-right controls --- */

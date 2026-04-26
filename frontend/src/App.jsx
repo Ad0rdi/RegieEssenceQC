@@ -8,7 +8,7 @@ import { useIsMobile } from './hooks/useIsMobile';
 import StationDrawer from './components/Map/StationDrawer';
 import FuelFilter from './components/Map/FuelFilter';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import MapController from './components/Map/MapController';
 import MapMarkers from './components/Map/MapMarkers';
 import UserLocationMarker from './components/Map/UserLocationMarker';
@@ -31,6 +31,7 @@ L.Icon.Default.mergeOptions({
 
 const DEFAULT_CENTER = [45.5017, -73.5673];
 const DEFAULT_ZOOM = 12;
+const GPS_ZOOM = 17;
 const WHEEL_PX_PER_ZOOM_LEVEL = 150;
 const ZOOM_SNAP = 0.25;
 const ZOOM_DELTA = 0.25;
@@ -45,68 +46,111 @@ function AppContent() {
    const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
    const [radiusFilter, setRadiusFilter] = useState(null);
   const [selectedStationId, setSelectedStationId] = useState(null);
-   const [selectedStationSource, setSelectedStationSource] = useState(null);
- 
+  const [selectedStationSource, setSelectedStationSource] = useState(null);
+   const [gpsMarkerPosition, setGpsMarkerPosition] = useState(null);
+   useEffect(() => {
+     window.__GPS_STATE = { markerPosition: gpsMarkerPosition, centerLocation };
+   }, [gpsMarkerPosition, centerLocation]);
+  
 
-   const setGpsLocation = useCallback(() => {
-     if (!navigator.geolocation) {
-       alert("La géolocalisation n'est pas supportée par ce navigateur.");
-       return;
-     }
-     navigator.geolocation.getCurrentPosition(
-       (position) => {
-         if (position.coords.accuracy <= 100) {
+ const setGpsLocation = useCallback((position) => {
+       if (position) {
+         setCenterLocation(position);
+         return;
+       }
+       if (!navigator.geolocation) {
+         alert("La géolocalisation n'est pas supportée par ce navigateur.");
+         return;
+       }
+       navigator.geolocation.getCurrentPosition(
+         (position) => {
            setCenterLocation({
              lat: position.coords.latitude,
              lng: position.coords.longitude,
              accuracy: position.coords.accuracy,
            });
-         }
-       },
-       (err) => {
-         const messages = {
-           1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
-           2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
-           3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
-         };
-         alert(messages[err.code] || `Erreur de géolocalisation: ${err.message}`);
-       },
-       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-     );
-   }, []);
+         },
+         (err) => {
+           if (err.code === 3) {
+             navigator.geolocation.getCurrentPosition(
+               (retryPosition) => {
+                 setCenterLocation({
+                   lat: retryPosition.coords.latitude,
+                   lng: retryPosition.coords.longitude,
+                   accuracy: retryPosition.coords.accuracy,
+                 });
+               },
+               (finalErr) => {
+                 const messages = {
+                   1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
+                   2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
+                   3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
+                 };
+                 alert(messages[finalErr.code] || `Erreur de géolocalisation: ${finalErr.message}`);
+               },
+               { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+             );
+             return;
+           }
+           const messages = {
+             1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
+             2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
+             3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
+           };
+           alert(messages[err.code] || `Erreur de géolocalisation: ${err.message}`);
+         },
+         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+       );
+     }, []);
 
     // Initialize GPS on mount: request position + start watching
-     useEffect(() => {
-       if (!navigator.geolocation) return;
-       let watchId = null;
+   useEffect(() => {
+        if (!navigator.geolocation) return;
+        let watchId = null;
+        let lastWatchedLat = null;
+        let lastWatchedLng = null;
 
-       const initGPS = () => {
-         navigator.geolocation.getCurrentPosition(
-           (position) => {
-             if (position.coords.accuracy <= 100) {
-               setCenterLocation({
-                 lat: position.coords.latitude,
-                 lng: position.coords.longitude,
-                 accuracy: position.coords.accuracy,
-               });
-             }
-           },
-           () => { /* denied/timeout: keep last known, ignore silently */ },
-           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-         );
+        const initGPS = () => {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                console.log('[GPS] initial position:', position.coords.latitude, position.coords.longitude, 'accuracy:', position.coords.accuracy);
+                if (position.coords.accuracy > 1 && position.coords.accuracy <= 100) {
+                  setGpsMarkerPosition({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                  });
+                }
+              },
+              (err) => { console.log('[GPS] initial error:', err.code, err.message); },
+              { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+            );
 
-         watchId = navigator.geolocation.watchPosition(
-           (position) => {
-             if (position.coords.accuracy <= 100) {
-               setCenterLocation((prev) =>
-                 prev ? { ...prev, lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy } : prev
-               );
-             }
-           },
-           () => { /* ignore: keep last known location */ },
-           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-         );
-       };
+            watchId = navigator.geolocation.watchPosition(
+               (position) => {
+                 console.log('[GPS] watch update:', position.coords.latitude, position.coords.longitude, 'accuracy:', position.coords.accuracy);
+                 if (
+                   Math.abs(position.coords.latitude - lastWatchedLat) < 0.00001 &&
+                   Math.abs(position.coords.longitude - lastWatchedLng) < 0.00001
+                 ) {
+                   console.log('[GPS] skipping duplicate');
+                   return;
+                 }
+                 lastWatchedLat = position.coords.latitude;
+                 lastWatchedLng = position.coords.longitude;
+
+                 if (position.coords.accuracy > 1 && position.coords.accuracy <= 100) {
+                   setGpsMarkerPosition({
+                     lat: position.coords.latitude,
+                     lng: position.coords.longitude,
+                     accuracy: position.coords.accuracy,
+                   });
+                 }
+               },
+               (err) => { console.log('[GPS] watch error:', err.code, err.message); },
+               { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+             );
+           };
 
        initGPS();
 
@@ -194,6 +238,7 @@ function AppContent() {
   );
 
   const mapCenter = centerLocation ? [centerLocation.lat, centerLocation.lng] : DEFAULT_CENTER;
+  const mapZoom = centerLocation ? GPS_ZOOM : DEFAULT_ZOOM;
 
  return (
     <div className="app-container">
@@ -263,10 +308,10 @@ function AppContent() {
       </div>
 
       <div className="map-container">
-        <StationDrawer stations={filteredFeatures} onStationClick={handleDrawerStationClick} selectedStationId={selectedStationId} />
+        <StationDrawer stations={filteredFeatures} onStationClick={handleDrawerStationClick} selectedStationId={selectedStationId} centerLocation={centerLocation} />
         <MapContainer
           center={mapCenter}
-          zoom={DEFAULT_ZOOM}
+          zoom={mapZoom}
           wheelPxPerZoomLevel={WHEEL_PX_PER_ZOOM_LEVEL}
           zoomSnap={ZOOM_SNAP}
           zoomDelta={ZOOM_DELTA}
@@ -275,7 +320,7 @@ function AppContent() {
         >
           <div className="leaflet-bottom-controls">
             {!isMobile && <ZoomButtons />}
-            <GpsButton onGpsClick={() => setGpsLocation()} />
+            <GpsButton onGpsClick={(pos) => setGpsLocation(pos)} />
           </div>
           <StationDrawerButton
             stationCount={filteredFeatures.length}
@@ -286,7 +331,7 @@ function AppContent() {
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          {centerLocation && <UserLocationMarker location={centerLocation} />}
+          <UserLocationMarker location={gpsMarkerPosition} />
           <MapMarkers
             stations={filteredFeatures}
             selectedStationId={selectedStationId}

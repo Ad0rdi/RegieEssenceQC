@@ -49,7 +49,7 @@ describe('StationTable', () => {
     const row = screen.getByText('Brand A').closest('tr');
     if (row) {
       fireEvent.click(row);
-      expect(handleClick).toHaveBeenCalledWith(mockStations[0]);
+      expect(handleClick).toHaveBeenCalledWith({ ...mockStations[0], distance: null });
     }
   });
 

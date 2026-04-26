@@ -1,7 +1,45 @@
 import { useMap } from 'react-leaflet';
+import { useRef } from 'react';
+
+const GPS_MESSAGES = {
+  1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
+  2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
+  3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
+};
 
 export default function GpsButton({ onGpsClick }) {
   const map = useMap();
+  const isRetryingRef = useRef(false);
+  const successReceivedRef = useRef(false);
+
+  const showPosition = (position) => {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    const accuracy = position.coords.accuracy;
+    successReceivedRef.current = true;
+    if (onGpsClick) onGpsClick({ lat, lng, accuracy });
+  };
+
+  const handleError = (err) => {
+    if (successReceivedRef.current) return;
+
+    if (err.code === 3 && !isRetryingRef.current) {
+      isRetryingRef.current = true;
+      navigator.geolocation.getCurrentPosition(
+        (retryPosition) => {
+          showPosition(retryPosition);
+        },
+        (finalErr) => {
+          isRetryingRef.current = false;
+        },
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+      );
+      return;
+    }
+    isRetryingRef.current = false;
+    const msg = GPS_MESSAGES[err.code] || `Erreur de géolocalisation: ${err.message}`;
+    alert(msg);
+  };
 
   const handleGpsClick = () => {
     if (!navigator.geolocation) {
@@ -10,23 +48,9 @@ export default function GpsButton({ onGpsClick }) {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        if (map) {
-          map.flyTo([lat, lng], 15, { duration: 1.5 });
-        }
-        if (onGpsClick) onGpsClick({ lat, lng });
-      },
-      (err) => {
-        const messages = {
-          1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
-          2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
-          3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
-        };
-        alert(messages[err.code] || `Erreur de géolocalisation: ${err.message}`);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      showPosition,
+      handleError,
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 

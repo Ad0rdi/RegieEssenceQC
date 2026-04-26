@@ -1,11 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { calculateDistance } from '../../utils/geolocation';
 
-const StationTable = ({ stations, onStationClick, selectedStationId, selectedFuelTypes }) => {
-  const [sortConfig, setSortConfig] = useState({ key: 'regular', direction: 'asc' });
+const StationTable = ({ stations, onStationClick, selectedStationId, selectedFuelTypes, centerLocation }) => {
+  const scrollContainerRef = useRef(null);
+  const savedScrollTopRef = useRef(0);
+
+  const [sortConfig, setSortConfig] = useState(() => {
+    const saved = localStorage.getItem('stationTableSort');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return { key: 'regular', direction: 'asc' };
+      }
+    }
+    return { key: 'regular', direction: 'asc' };
+  });
 
   const getVal = (s, key) => {
     if (key === 'minPrice') return s.prices?.regular ?? Infinity;
     if (key === 'regular' || key === 'super' || key === 'diesel') return s.prices?.[key] ?? Infinity;
+    if (key === 'distance') return s.distance != null ? s.distance : Infinity;
     return (s[key] || '') ?? '';
   };
 
@@ -19,10 +34,46 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
     selectedFuelTypes?.includes(col.key)
   );
 
-  const primaryFuelKey = visibleFuelColumns.length > 0 ? visibleFuelColumns[0].key : 'regular';
-  const minPrimaryPrice = Math.min(...stations.map(s => s.prices?.[primaryFuelKey] ?? Infinity));
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    const newConfig = { key, direction };
+    setSortConfig(newConfig);
+    localStorage.setItem('stationTableSort', JSON.stringify(newConfig));
+  };
 
-  const sortedStations = [...stations].sort((a,
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = savedScrollTopRef.current;
+    }
+  }, [stations]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const handleScroll = () => {
+      savedScrollTopRef.current = container.scrollTop;
+    };
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const stationsWithDistance = useMemo(() => {
+    if (!centerLocation) {
+      return stations.map(s => ({ ...s, distance: null }));
+    }
+    return stations.map(s => ({
+      ...s,
+      distance: Math.round(calculateDistance(centerLocation.lat, centerLocation.lng, s.lat, s.lng) * 10) / 10
+    }));
+  }, [stations, centerLocation]);
+
+  const primaryFuelKey = visibleFuelColumns.length > 0 ? visibleFuelColumns[0].key : 'regular';
+  const minPrimaryPrice = Math.min(...stationsWithDistance.map(s => s.prices?.[primaryFuelKey] ?? Infinity));
+
+  const sortedStations = [...stationsWithDistance].sort((a,
     b) => {
     const aVal = getVal(a, sortConfig.key);
     const bVal = getVal(b, sortConfig.key);
@@ -32,16 +83,8 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
     return 0;
   });
 
-  const requestSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
-  };
-
   return (
-    <div className="station-table-container">
+    <div className="station-table-container" ref={scrollContainerRef}>
       <table className="station-table">
         <thead>
           <tr>
@@ -63,7 +106,7 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
                 >
                <td className="station-table-cell">{station.brand || station.name || 'N/A'}</td>
                   <td className="station-table-cell">{station.address || 'N/A'}</td>
-                   <td className="station-table-cell">{station.distance != null ? `${station.distance} km` : '—'}</td>
+                   <td className="station-table-cell">{station.distance != null ? `${station.distance.toFixed(1)} km` : '—'}</td>
                   {visibleFuelColumns.map(col => (
                     <td key={col.key} className="station-table-cell">
                       {station.prices?.[col.key] != null ? `$${station.prices[col.key].toFixed(3)}` : 'N/A'}
