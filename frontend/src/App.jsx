@@ -79,14 +79,7 @@ function AppContent() {
                 accuracy: retryPosition.coords.accuracy,
               });
             },
-            (finalErr) => {
-              const messages = {
-                1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
-                2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
-                3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
-              };
-              alert(messages[finalErr.code] || `Erreur de géolocalisation: ${finalErr.message}`);
-            },
+            () => {},
             { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
           );
           return;
@@ -94,9 +87,10 @@ function AppContent() {
         const messages = {
           1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
           2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
-          3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
         };
-        alert(messages[err.code] || `Erreur de géolocalisation: ${err.message}`);
+        if (err.code !== 3) {
+          alert(messages[err.code] || `Erreur de géolocalisation: ${err.message}`);
+        }
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
