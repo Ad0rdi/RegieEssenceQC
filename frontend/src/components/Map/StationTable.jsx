@@ -47,6 +47,7 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
           <tr>
             <th onClick={() => requestSort('brand')} style={{ cursor: 'pointer' }}>Brand</th>
             <th onClick={() => requestSort('address')} style={{ cursor: 'pointer' }}>Address</th>
+            <th onClick={() => requestSort('distance')} style={{ cursor: 'pointer' }}>Distance</th>
             {visibleFuelColumns.map(col => (
               <th key={col.key} onClick={() => requestSort(col.key)} style={{ cursor: 'pointer' }}>{col.label}</th>
             ))}
@@ -62,6 +63,7 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
                 >
                <td className="station-table-cell">{station.brand || station.name || 'N/A'}</td>
                   <td className="station-table-cell">{station.address || 'N/A'}</td>
+                   <td className="station-table-cell">{station.distance != null ? `${station.distance} km` : '—'}</td>
                   {visibleFuelColumns.map(col => (
                     <td key={col.key} className="station-table-cell">
                       {station.prices?.[col.key] != null ? `$${station.prices[col.key].toFixed(3)}` : 'N/A'}
