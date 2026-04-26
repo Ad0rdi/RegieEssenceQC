@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 
 export default function GpsButton({ onGpsClick }) {
-  const map = useMap();
   const successReceivedRef = useRef(false);
 
   const showPosition = (position) => {

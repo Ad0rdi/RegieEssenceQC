@@ -91,11 +91,13 @@ function AppContent() {
         let lastWatchedLng = null;
 
         const initGPS = () => {
-            navigator.geolocation.getCurrentPosition(
-           (position) => {
-              setGpsMarkerPosition({ lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy });
-            },
-            (err) => { /* initial GPS error */ },
+     navigator.geolocation.getCurrentPosition(
+            (position) => {
+               if (position.coords.accuracy > 1 && position.coords.accuracy <= 100) {
+                 setGpsMarkerPosition({ lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy });
+               }
+             },
+             (err) => { /* initial GPS error */ },
               { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
             );
 
