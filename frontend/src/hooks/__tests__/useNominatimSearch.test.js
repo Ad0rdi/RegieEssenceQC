@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useNominatimSearch, getCachedResults, setCachedResults } from '../../utils/nominatimSearch';
+import { useNominatimSearch, setCachedResults } from '../../utils/nominatimSearch';
 
 const mockFetch = vi.fn();
 

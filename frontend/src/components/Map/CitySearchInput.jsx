@@ -21,7 +21,6 @@ function levenshtein(a, b) {
 function CitySearchInput({ onCitySelect }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [cities, setCities] = useState([]);
@@ -245,9 +244,8 @@ function CitySearchInput({ onCitySelect }) {
           {isPreciseMode ? '🏙️' : '📍'}
         </button>
       </div>
-      {loading && <div className="search-loading">Chargement...</div>}
       {error && <div className="error-message">{error}</div>}
-      {!loading && !error && showDropdown && results.length > 0 && (
+      {!error && showDropdown && results.length > 0 && (
         <ul className="city-search-dropdown">
           {results.map((result, index) => (
             <li
@@ -260,7 +258,7 @@ function CitySearchInput({ onCitySelect }) {
           ))}
         </ul>
       )}
-      {!loading && !error && showDropdown && results.length === 0 && (
+      {!error && showDropdown && results.length === 0 && (
         <div className="city-search-dropdown">
           <div className="no-results">Aucune ville trouvée</div>
         </div>
