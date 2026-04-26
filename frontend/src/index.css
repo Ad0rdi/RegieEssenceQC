@@ -181,7 +181,8 @@ body[data-theme="dark"] .gps-btn {
   position: absolute;
   top: 100%;
   left: 0;
-  right: 0;
+  width: fit-content;
+  min-width: 160px;
   max-height: 200px;
   overflow-y: auto;
   background: var(--bg);
@@ -371,6 +372,7 @@ body[data-theme="dark"] .reset-btn:hover {
   cursor: pointer;
   border-bottom: 1px solid var(--border-light);
   color: var(--text);
+  white-space: nowrap;
 }
 
 .city-search-item:last-child {
@@ -732,7 +734,7 @@ body[data-theme="dark"] .mobile .header-content .price-legend {
 }
 
 .mobile .city-search-dropdown {
-  min-width: 200px;
+  z-index: 2000;
 }
 
 .mobile .controls-frame .gps-btn {

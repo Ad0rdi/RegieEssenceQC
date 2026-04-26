@@ -1,10 +1,7 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { calculateDistance } from '../../utils/geolocation';
 
 const StationTable = ({ stations, onStationClick, selectedStationId, selectedFuelTypes, centerLocation }) => {
-  const scrollContainerRef = useRef(null);
-  const savedScrollTopRef = useRef(0);
-
   const [sortConfig, setSortConfig] = useState(() => {
     const saved = localStorage.getItem('stationTableSort');
     if (saved) {
@@ -44,22 +41,6 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
     localStorage.setItem('stationTableSort', JSON.stringify(newConfig));
   };
 
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = savedScrollTopRef.current;
-    }
-  }, [stations]);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    const handleScroll = () => {
-      savedScrollTopRef.current = container.scrollTop;
-    };
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, []);
-
   const stationsWithDistance = useMemo(() => {
     if (!centerLocation) {
       return stations.map(s => ({ ...s, distance: null }));
@@ -84,7 +65,7 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
   });
 
   return (
-    <div className="station-table-container" ref={scrollContainerRef}>
+    <div className="station-table-container">
       <table className="station-table">
         <thead>
           <tr>

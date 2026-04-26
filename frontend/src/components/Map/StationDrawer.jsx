@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useFilters } from '../../context/FilterContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import StationTable from './StationTable';
@@ -6,6 +6,24 @@ import StationTable from './StationTable';
 const StationDrawer = ({ stations, onStationClick, selectedStationId, centerLocation }) => {
   const { drawerOpen, setDrawerOpen, selectedFuelTypes } = useFilters();
   const isMobile = useIsMobile();
+  const scrollRef = useRef(null);
+  const savedScrollTop = useRef(0);
+
+  useEffect(() => {
+    if (isMobile && drawerOpen && scrollRef.current) {
+      requestAnimationFrame(() => {
+        scrollRef.current.scrollTop = savedScrollTop.current;
+      });
+    }
+  }, [drawerOpen, isMobile]);
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+    const onScroll = () => { savedScrollTop.current = container.scrollTop; };
+    container.addEventListener('scroll', onScroll);
+    return () => container.removeEventListener('scroll', onScroll);
+  }, []);
 
   const handleStationClick = (station) => {
     onStationClick?.(station);
@@ -30,7 +48,7 @@ const StationDrawer = ({ stations, onStationClick, selectedStationId, centerLoca
         </button>
       )}
       {drawerOpen && (
-        <div className="drawer-content">
+        <div className="drawer-content" ref={scrollRef}>
           <StationTable stations={stations} onStationClick={handleStationClick} selectedStationId={selectedStationId} selectedFuelTypes={selectedFuelTypes} centerLocation={centerLocation} />
         </div>
       )}
