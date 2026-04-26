@@ -8,7 +8,7 @@ import { useIsMobile } from './hooks/useIsMobile';
 import StationDrawer from './components/Map/StationDrawer';
 import FuelFilter from './components/Map/FuelFilter';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import MapController from './components/Map/MapController';
 import MapMarkers from './components/Map/MapMarkers';
 import UserLocationMarker from './components/Map/UserLocationMarker';
@@ -44,68 +44,92 @@ function AppContent() {
   const { stations, loading, error } = useStations(selectedFuelTypes);
   const [centerLocation, setCenterLocation] = useState(null);
    const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
-   const [radiusFilter, setRadiusFilter] = useState(null);
+    const [radiusFilter, setRadiusFilter] = useState(null);
   const [selectedStationId, setSelectedStationId] = useState(null);
   const [selectedStationSource, setSelectedStationSource] = useState(null);
-   const [gpsMarkerPosition, setGpsMarkerPosition] = useState(null);
-   useEffect(() => {
-     window.__GPS_STATE = { markerPosition: gpsMarkerPosition, centerLocation };
-   }, [gpsMarkerPosition, centerLocation]);
+    const [gpsMarkerPosition, setGpsMarkerPosition] = useState(null);
+    useEffect(() => {
+      window.__GPS_STATE = { markerPosition: gpsMarkerPosition, centerLocation };
+    }, [gpsMarkerPosition, centerLocation]);
   
+  const setGpsLocation = useCallback((position) => {
+    if (position) {
+      setCenterLocation(position);
+      return;
+    }
+    if (!navigator.geolocation) {
+      alert("La géolocalisation n'est pas supportée par ce navigateur.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCenterLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        });
+      },
+      (err) => {
+        if (err.code === 3) {
+          navigator.geolocation.getCurrentPosition(
+            (retryPosition) => {
+              setCenterLocation({
+                lat: retryPosition.coords.latitude,
+                lng: retryPosition.coords.longitude,
+                accuracy: retryPosition.coords.accuracy,
+              });
+            },
+            (finalErr) => {
+              const messages = {
+                1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
+                2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
+                3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
+              };
+              alert(messages[finalErr.code] || `Erreur de géolocalisation: ${finalErr.message}`);
+            },
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+          );
+          return;
+        }
+        const messages = {
+          1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
+          2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
+          3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
+        };
+        alert(messages[err.code] || `Erreur de géolocalisation: ${err.message}`);
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+  }, []);
 
- const setGpsLocation = useCallback((position) => {
-       if (position) {
-         setCenterLocation(position);
-         return;
-       }
-       if (!navigator.geolocation) {
-         alert("La géolocalisation n'est pas supportée par ce navigateur.");
-         return;
-       }
-       navigator.geolocation.getCurrentPosition(
-         (position) => {
-           setCenterLocation({
-             lat: position.coords.latitude,
-             lng: position.coords.longitude,
-             accuracy: position.coords.accuracy,
-           });
-         },
-         (err) => {
-           if (err.code === 3) {
-             navigator.geolocation.getCurrentPosition(
-               (retryPosition) => {
-                 setCenterLocation({
-                   lat: retryPosition.coords.latitude,
-                   lng: retryPosition.coords.longitude,
-                   accuracy: retryPosition.coords.accuracy,
-                 });
-               },
-               (finalErr) => {
-                 const messages = {
-                   1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
-                   2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
-                   3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
-                 };
-                 alert(messages[finalErr.code] || `Erreur de géolocalisation: ${finalErr.message}`);
-               },
-               { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
-             );
-             return;
-           }
-           const messages = {
-             1: "Accès à la position refusé. Veuillez autoriser la géolocalisation.",
-             2: "Position indisponible. Vérifiez les paramètres de votre appareil.",
-             3: "Délai d'attente dépassé. Réessayez s'il vous plaît.",
-           };
-           alert(messages[err.code] || `Erreur de géolocalisation: ${err.message}`);
-         },
-         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-       );
-     }, []);
+  useEffect(() => {
+   const handleContext = (e) => {
+      if (e.target?.matches?.('.filter-input-select, .city-search-input')) {
+        e.preventDefault();
+      }
+    };
+    const handleSelectStart = (e) => {
+      if (e.target?.matches?.('.filter-input-select, .city-search-input')) {
+        e.preventDefault();
+      }
+    };
+    const handleDragStart = (e) => {
+      if (e.target?.matches?.('.filter-input-select, .city-search-input')) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('contextmenu', handleContext);
+    document.addEventListener('selectstart', handleSelectStart);
+    document.addEventListener('dragstart', handleDragStart);
+    return () => {
+      document.removeEventListener('contextmenu', handleContext);
+      document.removeEventListener('selectstart', handleSelectStart);
+      document.removeEventListener('dragstart', handleDragStart);
+    };
+  }, []);
 
-    // Initialize GPS on mount: request position + start watching
-   useEffect(() => {
-        if (!navigator.geolocation) return;
+  useEffect(() => {
+    if (!navigator.geolocation) return;
         let watchId = null;
         let lastWatchedLat = null;
         let lastWatchedLng = null;
@@ -244,6 +268,9 @@ function AppContent() {
     <div className="app-container">
       <div className="app-header">
         <div className="header-content">
+          <div className="legend-frame">
+            <PriceLegend stations={filteredFeatures} selectedFuelTypes={selectedFuelTypes} />
+          </div>
           <div className="header-controls">
             <div className="controls-frame">
               <div className="header-logo">
@@ -263,30 +290,42 @@ function AppContent() {
 
               <div className="header-divider" />
 
-              <div className="header-filters">
-                <div className="filter-input-group">
-                  <label htmlFor="max-price">Prix max $</label>
-                  <input
-                    id="max-price"
-                    type="number"
-                    step="0.01"
-                    value={priceFilter.max === null ? '' : priceFilter.max}
-                    onChange={(e) => setPriceFilter(p => ({ ...p, max: e.target.value ? parseFloat(e.target.value) : null }))}
-                    placeholder="—"
-                  />
+              <form onSubmit={(e) => e.preventDefault()}>
+                <div className="header-filters">
+
+                  <div className="filter-input-group">
+                    <label htmlFor="radius">Rayon km</label>
+                    <input
+                      id="radius"
+                      className="filter-input-select"
+                      type="text"
+                      inputMode="numeric"
+                      enterKeyHint="done"
+                      step="1"
+                      value={radiusFilter !== null ? radiusFilter : ''}
+                      onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) : null)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                      onFocus={(e) => { e.target.select(); }}
+                      placeholder="—"
+                    />
+                  </div>
+                    <div className="filter-input-group">
+                        <label htmlFor="max-price">Prix max $</label>
+                        <input
+                            id="max-price"
+                            className="filter-input-select"
+                            type="number"
+                            step="0.01"
+                            enterKeyHint="done"
+                            value={priceFilter.max === null ? '' : priceFilter.max}
+                            onChange={(e) => setPriceFilter(p => ({ ...p, max: e.target.value === '' ? null : parseFloat(e.target.value) }))}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.target.blur(); } }}
+                            onFocus={(e) => e.target.select()}
+                            placeholder="—"
+                        />
+                    </div>
                 </div>
-                <div className="filter-input-group">
-                  <label htmlFor="radius">Rayon km</label>
-                  <input
-                    id="radius"
-                    type="number"
-                    step="1"
-                    value={radiusFilter !== null ? radiusFilter : ''}
-                    onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) : null)}
-                    placeholder="—"
-                  />
-                </div>
-              </div>
+              </form>
 
               <div className="header-divider" />
 
@@ -300,9 +339,6 @@ function AppContent() {
                 {theme === 'dark' ? '☀️' : '🌙'}
               </button>
             </div>
-          </div>
-          <div className="legend-frame">
-            <PriceLegend stations={filteredFeatures} selectedFuelTypes={selectedFuelTypes} />
           </div>
         </div>
       </div>

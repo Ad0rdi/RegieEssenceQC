@@ -332,6 +332,14 @@ body[data-theme="dark"] .leaflet-control-attribution {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
 
+.filter-input-select {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
 /* Reset button */
 .reset-btn {
   padding: 6px 12px;
@@ -660,10 +668,11 @@ body[data-theme="dark"] .theme-toggle-btn {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  order: 2;
 }
 
 .mobile .header-controls {
+  order: 1;
   flex: 0 1 auto;
   pointer-events: auto;
 }

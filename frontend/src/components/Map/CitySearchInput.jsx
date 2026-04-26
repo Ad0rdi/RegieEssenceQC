@@ -2,6 +2,21 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 const SEARCH_DELAY = 300;
 
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  return dp[m][n];
+}
+
 function CitySearchInput({ onCitySelect }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -51,19 +66,73 @@ function CitySearchInput({ onCitySelect }) {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    if (value.length < 2) {
+    const trimmed = value.trim();
+    if (trimmed.length < 2) {
       setShowDropdown(false);
       setResults([]);
       return;
     }
 
     searchTimeoutRef.current = setTimeout(() => {
-      // Local search: match anywhere in city name or region
-      const lowerQuery = value.toLowerCase();
-      const filtered = cities.filter(city =>
-        city.name.toLowerCase().includes(lowerQuery) ||
-        city.region.toLowerCase().includes(lowerQuery)
-      ).slice(0, 5);
+      const lowerQuery = trimmed.toLowerCase();
+      const queryWords = lowerQuery.split(/\s+/);
+
+      const scoreCity = (city) => {
+        const nameLower = city.name.toLowerCase();
+        const regionLower = city.region.toLowerCase();
+        const nameWords = nameLower.split(/\s+/);
+        const regionWords = regionLower.split(/\s+/);
+
+        let score = 0;
+
+        for (const qWord of queryWords) {
+          // Exact match
+          if (nameLower.includes(qWord) || regionLower.includes(qWord)) {
+            score += 10;
+            continue;
+          }
+
+          // First-char match (e.g., "mont" matches "montreal")
+          if (nameLower.startsWith(qWord) || regionLower.startsWith(qWord)) {
+            score += 5;
+            continue;
+          }
+
+          // Per-word matching
+          for (const word of [...nameWords, ...regionWords]) {
+            if (word === qWord) { score += 10; break; }
+            if (word.startsWith(qWord)) { score += 4; break; }
+          }
+
+          // Fuzzy: each matching char in order
+          let qi = 0;
+          for (const wi of [...nameWords, ...regionWords].join('').split('')) {
+            if (qi < qWord.length && wi === qWord[qi]) qi++;
+          }
+          if (qi === qWord.length) score += qi * 0.5;
+
+          // Edit distance (Levenshtein)
+          const bestWord = [...nameWords, ...regionWords].reduce((best, word) => {
+            const d = levenshtein(word, qWord);
+            return d < best ? d : best;
+          }, Infinity);
+          if (bestWord <= 2 && bestWord > 0) {
+            score += Math.max(0, 5 - bestWord);
+          } else if (bestWord === 0) {
+            // handled above
+          }
+        }
+
+        return score;
+      };
+
+      const scored = cities.map(city => ({
+        city,
+        score: scoreCity(city)
+      }));
+
+      scored.sort((a, b) => b.score - a.score);
+      const filtered = scored.filter(s => s.score > 0).map(s => s.city).slice(0, 5);
       
       setResults(filtered);
       setShowDropdown(true);
@@ -84,6 +153,10 @@ function CitySearchInput({ onCitySelect }) {
     }
   }, [results, handleSelect]);
 
+  const handleFocus = useCallback(() => {
+    inputRef.current?.select();
+  }, []);
+
   return (
     <div className="city-search-container" ref={dropdownRef}>
       <input
@@ -93,6 +166,7 @@ function CitySearchInput({ onCitySelect }) {
         value={query}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
         className="city-search-input"
       />
       {loading && <div className="search-loading">Chargement...</div>}
