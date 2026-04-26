@@ -21,10 +21,7 @@ function UserLocationMarker({ location }) {
   useEffect(() => {
     if (!location) return;
 
-    console.log('[Marker] rendering location:', location);
-
     const gpsPane = map.getPane('gps-marker-pane');
-    console.log('[Marker] pane:', gpsPane, 'pane z-index:', gpsPane?.style?.zIndex);
 
     if (dotRef.current) {
       map.removeLayer(dotRef.current);
@@ -42,7 +39,6 @@ function UserLocationMarker({ location }) {
     const northPixel = map.latLngToLayerPoint(northLatLng);
 
     const ringPixelRadius = Math.abs(northPixel.y - centerPixel.y);
-    console.log('[Marker] ringPixelRadius:', ringPixelRadius);
 
     circleRef.current = L.circle([location.lat, location.lng], {
       radius: accuracy,

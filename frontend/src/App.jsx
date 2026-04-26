@@ -136,44 +136,35 @@ function AppContent() {
 
         const initGPS = () => {
             navigator.geolocation.getCurrentPosition(
-              (position) => {
-                console.log('[GPS] initial position:', position.coords.latitude, position.coords.longitude, 'accuracy:', position.coords.accuracy);
-                if (position.coords.accuracy > 1 && position.coords.accuracy <= 100) {
-                  setGpsMarkerPosition({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                    accuracy: position.coords.accuracy,
-                  });
-                }
-              },
-              (err) => { console.log('[GPS] initial error:', err.code, err.message); },
+           (position) => {
+              setGpsMarkerPosition({ lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy });
+            },
+            (err) => { /* initial GPS error */ },
               { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
             );
 
-            watchId = navigator.geolocation.watchPosition(
-               (position) => {
-                 console.log('[GPS] watch update:', position.coords.latitude, position.coords.longitude, 'accuracy:', position.coords.accuracy);
-                 if (
-                   Math.abs(position.coords.latitude - lastWatchedLat) < 0.00001 &&
-                   Math.abs(position.coords.longitude - lastWatchedLng) < 0.00001
-                 ) {
-                   console.log('[GPS] skipping duplicate');
-                   return;
-                 }
-                 lastWatchedLat = position.coords.latitude;
-                 lastWatchedLng = position.coords.longitude;
+           watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                  if (
+                    Math.abs(position.coords.latitude - lastWatchedLat) < 0.00001 &&
+                    Math.abs(position.coords.longitude - lastWatchedLng) < 0.00001
+                  ) {
+                    return;
+                  }
+                  lastWatchedLat = position.coords.latitude;
+                  lastWatchedLng = position.coords.longitude;
 
-                 if (position.coords.accuracy > 1 && position.coords.accuracy <= 100) {
-                   setGpsMarkerPosition({
-                     lat: position.coords.latitude,
-                     lng: position.coords.longitude,
-                     accuracy: position.coords.accuracy,
-                   });
-                 }
-               },
-               (err) => { console.log('[GPS] watch error:', err.code, err.message); },
-               { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
-             );
+                  if (position.coords.accuracy > 1 && position.coords.accuracy <= 100) {
+                    setGpsMarkerPosition({
+                      lat: position.coords.latitude,
+                      lng: position.coords.longitude,
+                      accuracy: position.coords.accuracy,
+                    });
+                  }
+                },
+                (err) => { /* watch GPS error */ },
+                { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+              );
            };
 
        initGPS();
