@@ -17,6 +17,7 @@ import PriceLegend from './components/Map/PriceLegend';
 import CitySearchInput from './components/Map/CitySearchInput';
 import CityZoomController from './components/Map/CityZoomController';
 import GpsButton from './components/Map/GpsButton';
+import MapClickHandler from './components/Map/MapClickHandler';
 import ZoomButtons from './components/Map/ZoomButtons';
 import StationDrawerButton from './components/Map/StationDrawerButton';
 import { calculateDistance } from './utils/geolocation';
@@ -56,6 +57,8 @@ function AppContent() {
   const setGpsLocation = useCallback((position) => {
     if (position) {
       setCenterLocation(position);
+      setManualMarkerLocation(null);
+      setAddressLocation(null);
     }
   }, []);
 
@@ -120,12 +123,18 @@ useEffect(() => {
    }, []);
 
   const [addressLocation, setAddressLocation] = useState(null);
+  const [manualMarkerLocation, setManualMarkerLocation] = useState(null);
 
   const handleLocationSelect = useCallback((location) => {
       setCenterLocation(location);
       if (location.source === 'address') {
         setAddressLocation({ lat: location.lat, lng: location.lng });
+        setManualMarkerLocation(null);
+      } else if (location.source === 'map') {
+        setManualMarkerLocation({ lat: location.lat, lng: location.lng });
+        setAddressLocation(null);
       } else {
+        setManualMarkerLocation(null);
         setAddressLocation(null);
       }
     }, []);
@@ -272,7 +281,7 @@ useEffect(() => {
 
               <div className="header-divider" />
 
-              <button onClick={() => { setPriceFilter({ min: null, max: null }); setRadiusFilter(null); }} className="reset-btn">
+              <button onClick={() => { setPriceFilter({ min: null, max: null }); setRadiusFilter(null); setCenterLocation(null); setAddressLocation(null); setManualMarkerLocation(null); }} className="reset-btn">
                 Réinitialiser
               </button>
 
@@ -321,6 +330,8 @@ useEffect(() => {
           {selectedStation && <MapController station={selectedStation} source={selectedStationSource} />}
           {centerLocation && <CityZoomController city={centerLocation} />}
           {addressLocation && <AddressMarker location={addressLocation} />}
+          {manualMarkerLocation && <AddressMarker location={manualMarkerLocation} />}
+          <MapClickHandler onMapClick={handleLocationSelect} />
         </MapContainer>
       </div>
     </div>
