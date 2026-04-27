@@ -155,7 +155,13 @@ describe('CitySearchInput', () => {
       {
         lat: '45.5017',
         lon: '-73.5673',
-        display_name: 'Montreal, QC, Canada'
+        display_name: '1234 Rue Sainte-Catherine, Montreal, QC, Canada',
+        address: {
+          house_number: '1234',
+          road: 'Rue Sainte-Catherine',
+          city: 'Montreal',
+          postcode: 'QC',
+        }
       }
     ];
 
@@ -175,7 +181,7 @@ describe('CitySearchInput', () => {
     await fireEvent.click(toggleButton);
 
     const input = screen.getByPlaceholderText(/rechercher une adresse/i);
-    await fireEvent.change(input, { target: { value: 'montreal' } });
+    await fireEvent.change(input, { target: { value: '1234 sainte-catherine' } });
 
     // Click search button
     const searchBtn = screen.getByTitle('Rechercher');
@@ -183,11 +189,11 @@ describe('CitySearchInput', () => {
 
     // Wait for results
     await waitFor(() => {
-      expect(screen.getByText('Montreal, QC, Canada')).toBeInTheDocument();
+      expect(screen.getByText('1234, Rue Sainte-Catherine, Montreal, QC')).toBeInTheDocument();
     });
 
     // Select the result
-    await fireEvent.click(screen.getByText('Montreal, QC, Canada'));
+    await fireEvent.click(screen.getByText('1234, Rue Sainte-Catherine, Montreal, QC'));
 
     // Toggle should have auto-reset: placeholder should be back to city mode
     expect(screen.getByPlaceholderText(/rechercher une ville/i)).toBeInTheDocument();
@@ -195,7 +201,7 @@ describe('CitySearchInput', () => {
     // Callback should have been called with address source
     expect(mockCallback).toHaveBeenCalledWith(
       { lat: 45.5017, lng: -73.5673, source: 'address' },
-      'Montreal, QC, Canada'
+      '1234, Rue Sainte-Catherine, Montreal, QC'
     );
   });
 
@@ -216,7 +222,7 @@ describe('CitySearchInput', () => {
     await fireEvent.click(toggleButton);
 
     const input = screen.getByPlaceholderText(/rechercher une adresse/i);
-    await fireEvent.change(input, { target: { value: 'xyznonexistent' } });
+    await fireEvent.change(input, { target: { value: '1234 xyznonexistent' } });
 
     // Click search button
     const searchBtn = screen.getByTitle('Rechercher');
@@ -225,5 +231,188 @@ describe('CitySearchInput', () => {
     await waitFor(() => {
       expect(screen.getByText(/aucun résultat/i)).toBeInTheDocument();
     });
+  });
+
+  it('hides city results while typing in precise mode', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => mockCitiesData,
+    });
+
+    render(<CitySearchInput onCitySelect={mockCallback} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/rechercher une ville/i)).toBeInTheDocument();
+    });
+
+    // First verify city mode works
+    const cityInput = screen.getByPlaceholderText(/rechercher une ville/i);
+    await fireEvent.change(cityInput, { target: { value: 'Sher' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Sherbrooke, Estrie')).toBeInTheDocument();
+    });
+
+    // Clear and switch to precise mode
+    await fireEvent.change(cityInput, { target: { value: '' } });
+    const toggleButton = screen.getByTitle('Mode précis');
+    await fireEvent.click(toggleButton);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/rechercher une adresse/i)).toBeInTheDocument();
+    });
+
+    // Type in precise mode - should NOT show city results
+    const preciseInput = screen.getByPlaceholderText(/rechercher une adresse/i);
+    await fireEvent.change(preciseInput, { target: { value: 'Sher' } });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Sherbrooke, Estrie')).not.toBeInTheDocument();
+    });
+  });
+
+  it('clears city results when toggling to precise mode', async () => {
+    render(<CitySearchInput onCitySelect={mockCallback} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/rechercher une ville/i)).toBeInTheDocument();
+    });
+
+    // Show city results
+    const input = screen.getByPlaceholderText(/rechercher une ville/i);
+    await fireEvent.change(input, { target: { value: 'Montreal' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Montreal, Montreal')).toBeInTheDocument();
+    });
+
+    // Switch to precise mode
+    const toggleButton = screen.getByTitle('Mode précis');
+    await fireEvent.click(toggleButton);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/rechercher une adresse/i)).toBeInTheDocument();
+    });
+
+    // City results should be cleared
+    expect(screen.queryByText('Montreal, Montreal')).not.toBeInTheDocument();
+  });
+
+  it('shows formatted address in precise mode results', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          lat: '45.5017',
+          lon: '-73.5673',
+          display_name: '1234 Rue Sainte-Catherine, Montreal, QC H3G 1P3, Canada',
+          address: {
+            house_number: '1234',
+            road: 'Rue Sainte-Catherine',
+            city: 'Montréal',
+            postcode: 'H3G 1P3',
+          }
+        }
+      ],
+    });
+
+    render(<CitySearchInput onCitySelect={mockCallback} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/rechercher une ville/i)).toBeInTheDocument();
+    });
+
+    // Switch to precise mode
+    const toggleButton = screen.getByTitle('Mode précis');
+    await fireEvent.click(toggleButton);
+
+    const input = screen.getByPlaceholderText(/rechercher une adresse/i);
+    await fireEvent.change(input, { target: { value: '1234 sainte-catherine' } });
+
+    // Click search button
+    const searchBtn = screen.getByTitle('Rechercher');
+    await fireEvent.click(searchBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('1234, Rue Sainte-Catherine, Montréal, H3G 1P3')).toBeInTheDocument();
+    });
+  });
+
+  it('does not search when query has no numbers in precise mode', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          lat: '45.5017',
+          lon: '-73.5673',
+          display_name: '1234 Rue Sainte-Catherine, Montreal, QC H3G 1P3, Canada',
+          address: {
+            house_number: '1234',
+            road: 'Rue Sainte-Catherine',
+            city: 'Montréal',
+            postcode: 'H3G 1P3',
+          }
+        }
+      ],
+    });
+
+    render(<CitySearchInput onCitySelect={mockCallback} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/rechercher une ville/i)).toBeInTheDocument();
+    });
+
+    // Switch to precise mode
+    const toggleButton = screen.getByTitle('Mode précis');
+    await fireEvent.click(toggleButton);
+
+    const input = screen.getByPlaceholderText(/rechercher une adresse/i);
+    await fireEvent.change(input, { target: { value: 'sainte-catherine' } });
+
+    // Click search button - should NOT make request because no numbers in query
+    const searchBtn = screen.getByTitle('Rechercher');
+    await fireEvent.click(searchBtn);
+
+    // No dropdown should appear since search was skipped
+    await waitFor(() => {
+      expect(screen.queryByText(/aucun résultat/i)).not.toBeInTheDocument();
+    });
+
+    // The API should NOT have been called
+    const calls = mockFetch.mock.calls;
+    const nominatimCalls = calls.filter(c => c[0] && c[0].includes('nominatim'));
+    expect(nominatimCalls.length).toBe(0);
+  });
+
+  it('does not search when query has only a number without a word', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    });
+
+    render(<CitySearchInput onCitySelect={mockCallback} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/rechercher une ville/i)).toBeInTheDocument();
+    });
+
+    // Switch to precise mode
+    const toggleButton = screen.getByTitle('Mode précis');
+    await fireEvent.click(toggleButton);
+
+    const input = screen.getByPlaceholderText(/rechercher une adresse/i);
+    await fireEvent.change(input, { target: { value: '1234' } });
+
+    const searchBtn = screen.getByTitle('Rechercher');
+    await fireEvent.click(searchBtn);
+
+    // No dropdown should appear since search was skipped
+    await waitFor(() => {
+      expect(screen.queryByText(/aucun résultat/i)).not.toBeInTheDocument();
+    });
+
+    const calls = mockFetch.mock.calls;
+    const nominatimCalls = calls.filter(c => c[0] && c[0].includes('nominatim'));
+    expect(nominatimCalls.length).toBe(0);
   });
 });

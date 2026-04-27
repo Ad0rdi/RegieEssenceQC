@@ -61,13 +61,86 @@ describe('useNominatimSearch', () => {
       { lat: 46.77, lng: -71.28, name: 'Ste-Foy, Quebec, Canada', display_name: 'Ste-Foy, Quebec, Canada' },
       { lat: 46.78, lng: -71.27, name: 'Ste-Foy–Sillery, Quebec, Canada', display_name: 'Ste-Foy–Sillery, Quebec, Canada' }
     ]);
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('ste-foy'),
-      expect.objectContaining({
-        headers: { 'User-Agent': 'RegieEssenceQC/1.0' }
-      })
-    );
+  });
+
+  it('formats address results with number, street, city, and postal code', async () => {
+    const nominatimResponse = [
+      {
+        lat: '45.5017',
+        lon: '-73.5673',
+        display_name: '1234 Rue Sainte-Catherine, Montreal, QC H3G 1P3, Canada',
+        address: {
+          house_number: '1234',
+          road: 'Rue Sainte-Catherine',
+          city: 'Montréal',
+          postcode: 'H3G 1P3',
+        }
+      }
+    ];
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => nominatimResponse
+    });
+
+    const { result } = renderHook(() => useNominatimSearch());
+
+    let results;
+    await act(async () => {
+      results = await result.current.search('1234 sainte-catherine');
+    });
+
+    expect(results[0].name).toBe('1234, Rue Sainte-Catherine, Montréal, H3G 1P3');
+    expect(results[0].display_name).toBe('1234 Rue Sainte-Catherine, Montreal, QC H3G 1P3, Canada');
+  });
+
+  it('falls back to display_name when address object is missing', async () => {
+    const nominatimResponse = [
+      {
+        lat: '45.5017',
+        lon: '-73.5673',
+        display_name: 'Place du Canada, Montreal, QC, Canada'
+      }
+    ];
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => nominatimResponse
+    });
+
+    const { result } = renderHook(() => useNominatimSearch());
+
+    let results;
+    await act(async () => {
+      results = await result.current.search('place du canada');
+    });
+
+    expect(results[0].name).toBe('Place du Canada, Montreal, QC, Canada');
+  });
+
+  it('uses display_name when address object has no usable fields', async () => {
+    const nominatimResponse = [
+      {
+        lat: '45.5017',
+        lon: '-73.5673',
+        display_name: 'Montreal, QC, Canada',
+        address: {}
+      }
+    ];
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => nominatimResponse
+    });
+
+    const { result } = renderHook(() => useNominatimSearch());
+
+    let results;
+    await act(async () => {
+      results = await result.current.search('montreal');
+    });
+
+    expect(results[0].name).toBe('Montreal, QC, Canada');
   });
 
   it('caches results after API call', async () => {

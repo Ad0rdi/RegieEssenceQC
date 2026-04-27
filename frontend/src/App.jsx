@@ -12,6 +12,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import MapController from './components/Map/MapController';
 import MapMarkers from './components/Map/MapMarkers';
 import UserLocationMarker from './components/Map/UserLocationMarker';
+import AddressMarker from './components/Map/AddressMarker';
 import PriceLegend from './components/Map/PriceLegend';
 import CitySearchInput from './components/Map/CitySearchInput';
 import CityZoomController from './components/Map/CityZoomController';
@@ -116,10 +117,17 @@ useEffect(() => {
            navigator.geolocation.clearWatch(watchId);
          }
        };
-     }, []);
+   }, []);
 
-   const handleLocationSelect = useCallback((location) => {
+  const [addressLocation, setAddressLocation] = useState(null);
+
+  const handleLocationSelect = useCallback((location) => {
       setCenterLocation(location);
+      if (location.source === 'address') {
+        setAddressLocation({ lat: location.lat, lng: location.lng });
+      } else {
+        setAddressLocation(null);
+      }
     }, []);
 
   // --- Filtering Logic ---
@@ -312,6 +320,7 @@ useEffect(() => {
           />
           {selectedStation && <MapController station={selectedStation} source={selectedStationSource} />}
           {centerLocation && <CityZoomController city={centerLocation} />}
+          {addressLocation && <AddressMarker location={addressLocation} />}
         </MapContainer>
       </div>
     </div>

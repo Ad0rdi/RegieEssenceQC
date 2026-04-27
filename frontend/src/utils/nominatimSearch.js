@@ -113,12 +113,30 @@ export function useNominatimSearch() {
 
       const results = data
         .filter(item => item.lat && item.lon)
-        .map(item => ({
-          lat: parseFloat(item.lat),
-          lng: parseFloat(item.lon),
-          name: item.display_name,
-          display_name: item.display_name,
-        }));
+        .map(item => {
+          const address = item.address || {};
+          const number = address.house_number || '';
+          const road = address.road || '';
+          const city = address.city || address.town || address.village || address.suburb || '';
+          const postalCode = address.postcode || '';
+
+          const parts = [];
+          if (number) parts.push(number);
+          if (road) parts.push(road);
+          if (city) parts.push(city);
+          if (postalCode) parts.push(postalCode);
+
+          const formatted = parts.length > 0
+            ? parts.join(', ')
+            : item.display_name;
+
+          return {
+            lat: parseFloat(item.lat),
+            lng: parseFloat(item.lon),
+            name: formatted,
+            display_name: item.display_name,
+          };
+        });
 
       setCachedResults(trimmed, results);
       return results;

@@ -24,6 +24,7 @@ function CitySearchInput({ onCitySelect }) {
   const [error, setError] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [cities, setCities] = useState([]);
+  const cityNamesSet = useRef(new Set());
   const { search: nominatimSearch, isSearching: isPreciseSearching, error: nominatimError } = useNominatimSearch();
   const [isPreciseMode, setIsPreciseMode] = useState(false);
   const [preciseResults, setPreciseResults] = useState([]);
@@ -38,8 +39,15 @@ function CitySearchInput({ onCitySelect }) {
       try {
         const response = await fetch(`${import.meta.env.BASE_URL}cities.json`);
         if (!response.ok) throw new Error('Failed to load cities');
-        const data = await response.json();
-        setCities(data);
+     const data = await response.json();
+      setCities(data);
+      const names = new Set();
+      for (const city of data) {
+        names.add(city.name.toLowerCase());
+        const regionWords = city.region.toLowerCase().split(/\s+/);
+        for (const rw of regionWords) names.add(rw);
+      }
+      cityNamesSet.current = names;
       } catch {
         setError('Erreur: Impossible de charger les villes');
       }
@@ -65,13 +73,19 @@ function CitySearchInput({ onCitySelect }) {
     const value = e.target.value;
     setQuery(value);
     setError(null);
-    
+
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
     const trimmed = value.trim();
     if (trimmed.length < 2) {
+      setShowDropdown(false);
+      setResults([]);
+      return;
+    }
+
+    if (isPreciseMode) {
       setShowDropdown(false);
       setResults([]);
       return;
@@ -141,7 +155,7 @@ function CitySearchInput({ onCitySelect }) {
       setResults(filtered);
       setShowDropdown(true);
     }, SEARCH_DELAY);
-  }, [cities]);
+  }, [cities, isPreciseMode]);
 
   const resetToCityMode = useCallback(() => {
     setIsPreciseMode(false);
@@ -186,6 +200,8 @@ function CitySearchInput({ onCitySelect }) {
     setIsPreciseMode(prev => !prev);
     setPreciseResults([]);
     setShowPreciseDropdown(false);
+    setResults([]);
+    setShowDropdown(false);
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
@@ -194,6 +210,14 @@ function CitySearchInput({ onCitySelect }) {
   const handlePreciseSearch = useCallback(async () => {
     const trimmed = query.trim();
     if (trimmed.length < 2) return;
+    if (!/\d/.test(trimmed)) return;
+    const tokens = trimmed.split(/\s+/).filter(t => t.length > 0);
+    const cityName = new Set(cityNamesSet.current);
+    const streetTokens = tokens.filter(t => {
+      if (!/[a-zA-ZÀ-ÿ]/.test(t)) return false;
+      return !cityName.has(t.toLowerCase());
+    });
+    if (streetTokens.length === 0) return;
 
     setPreciseResults([]);
     setShowPreciseDropdown(true);
@@ -245,7 +269,7 @@ function CitySearchInput({ onCitySelect }) {
         </button>
       </div>
       {error && <div className="error-message">{error}</div>}
-      {!error && showDropdown && results.length > 0 && (
+      {!error && !isPreciseMode && showDropdown && results.length > 0 && (
         <ul className="city-search-dropdown">
           {results.map((result, index) => (
             <li
@@ -258,7 +282,7 @@ function CitySearchInput({ onCitySelect }) {
           ))}
         </ul>
       )}
-      {!error && showDropdown && results.length === 0 && (
+      {!error && !isPreciseMode && showDropdown && results.length === 0 && (
         <div className="city-search-dropdown">
           <div className="no-results">Aucune ville trouvée</div>
         </div>
