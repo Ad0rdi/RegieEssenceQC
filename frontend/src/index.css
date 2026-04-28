@@ -64,7 +64,7 @@ body[data-theme="dark"] {
   top: 12px;
   left: 12px;
   z-index: 1000;
-  pointer-events: none;
+  pointer-events: auto;
   padding: 12px 16px;
   display: flex;
   align-items: stretch;
@@ -723,6 +723,7 @@ body[data-theme="dark"] .theme-toggle-btn {
   backdrop-filter: none;
   border-radius: 0;
   box-shadow: none;
+  pointer-events: none;
 }
 
 .mobile .header-content {
@@ -736,6 +737,10 @@ body[data-theme="dark"] .theme-toggle-btn {
   flex-wrap: nowrap;
   justify-content: space-between;
   pointer-events: none;
+}
+
+.mobile .header-content .price-legend {
+  pointer-events: auto;
 }
 
 .mobile .legend-frame {
@@ -758,10 +763,6 @@ body[data-theme="dark"] .mobile .controls-frame {
 
 body[data-theme="dark"] .mobile .header-content .price-legend {
   background: rgba(17, 24, 39, 0.95) !important;
-}
-
-.header-content .price-legend {
-  pointer-events: none;
 }
 
 .mobile .header-content .price-legend .price-legend-fuel-row {
