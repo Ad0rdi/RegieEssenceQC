@@ -248,10 +248,8 @@ useEffect(() => {
                     <input
                       id="radius"
                       className="filter-input-select"
-                      type="text"
-                      inputMode="numeric"
-                      enterKeyHint="done"
-                      step="1"
+                      type="number"
+                      step="any"
                       value={radiusFilter !== null ? radiusFilter : ''}
                       onChange={(e) => setRadiusFilter(e.target.value ? parseFloat(e.target.value) : null)}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
