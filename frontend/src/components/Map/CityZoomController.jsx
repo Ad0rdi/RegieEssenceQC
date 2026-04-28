@@ -6,9 +6,8 @@ const CITY_ZOOM = 12;
 function CityZoomController({ city }) {
   const map = useMap();
   useEffect(() => {
-    if (city) {
-      map.flyTo([city.lat, city.lng], CITY_ZOOM);
-    }
+    if (!city) return;
+    map.setView([city.lat, city.lng], CITY_ZOOM);
   }, [city, map]);
   return null;
 }

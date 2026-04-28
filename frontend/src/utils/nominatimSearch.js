@@ -5,9 +5,116 @@ import { useCallback, useRef, useState } from 'react';
 const QUEBEC_VIEWBOX = '-74.5,44.5,-57.5,52.5'; // west,south,east,north (Quebec province bounds)
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 const RATE_LIMIT_DELAY = 1000; // 1 request per second (Nominatim requirement)
+const POSTAL_CODE_RE = /^[A-Za-z]\d[A-Za-z][\s-]?\d[A-Za-z]\d$/;
+
+const QUEBEC_REGIONS = new Set([
+  'estrie', 'outaouais', 'saguenay', 'mauricie', 'laurentides',
+  'chaudiere-appalaches', 'bas-saint-laurent', 'gaspesie', 'cote-nord',
+  'abitibi-temiscamingue', 'nord-du-quebec', 'quebec'
+]);
+
+function normalizeCityName(name) {
+  return name
+    .toLowerCase()
+    .replace(/[áàâãäå]/g, 'a')
+    .replace(/[éèêë]/g, 'e')
+    .replace(/[íìîï]/g, 'i')
+    .replace(/[óòôõö]/g, 'o')
+    .replace(/[úùûü]/g, 'u')
+    .replace(/[ñ]/g, 'n')
+    .replace(/[ç]/g, 'c')
+    .replace(/[ÁÀÂÃÄÅ]/g, 'A')
+    .replace(/[ÉÈÊË]/g, 'E')
+    .replace(/[ÍÌÎÏ]/g, 'I')
+    .replace(/[ÓÒÔÕÖ]/g, 'O')
+    .replace(/[ÚÙÛÜ]/g, 'U')
+    .replace(/[Ñ]/g, 'N')
+    .replace(/[Ç]/g, 'C')
+    .replace(/['']/g, '')
+    .replace(/[-\s]+/g, ' ')
+    .trim();
+}
+
+let citySetPromise = null;
+async function getCitySet() {
+  if (citySetPromise) return citySetPromise;
+  citySetPromise = fetch(`${import.meta.env.BASE_URL}cities.json`)
+    .then(res => res.json())
+    .then(cities => new Set(cities.map(c => normalizeCityName(c.name))))
+    .catch(() => new Set());
+  return citySetPromise;
+}
+
+async function parseDisplayName(displayName) {
+  console.log('📝 parseDisplayName input:', displayName);
+  if (!displayName) return null;
+
+  const rawParts = displayName.split(',').map(p => p.trim()).filter(Boolean);
+  console.log('   rawParts:', rawParts);
+
+  if (rawParts.length === 0) return null;
+
+  const country = rawParts[rawParts.length - 1];
+  if (country.toLowerCase().includes('canada')) {
+    rawParts.pop();
+    console.log('   removed country, remaining:', rawParts);
+  }
+
+  const remaining = rawParts.slice();
+  let postalCode = '';
+  const lastIdx = remaining.length - 1;
+  if (POSTAL_CODE_RE.test(remaining[lastIdx])) {
+    postalCode = remaining[lastIdx];
+    remaining.pop();
+    console.log('   found postal code:', postalCode);
+  }
+
+  // Strip regions/provinces from the end before searching for cities
+  while (remaining.length > 0) {
+    const normalized = normalizeCityName(remaining[remaining.length - 1]);
+    console.log('   checking end:', remaining[remaining.length - 1], '-> normalized:', normalized, 'is region:', QUEBEC_REGIONS.has(normalized));
+    if (QUEBEC_REGIONS.has(normalized)) {
+      remaining.pop();
+    } else {
+      break;
+    }
+  }
+  console.log('   after stripping regions:', remaining);
+
+  const cities = await getCitySet();
+  console.log('   citySet size:', cities.size);
+
+  let cityIdx = -1;
+  for (let i = remaining.length - 1; i >= 0; i--) {
+    const normalized = normalizeCityName(remaining[i]);
+    console.log('   checking city at', i, ':', remaining[i], '->', normalized, 'found:', cities.has(normalized));
+    if (cities.has(normalized)) {
+      cityIdx = i;
+      break;
+    }
+  }
+
+  console.log('   cityIdx:', cityIdx);
+
+  if (cityIdx === -1) {
+    return null;
+  }
+
+  const streetParts = remaining.slice(0, cityIdx);
+  const street = streetParts.length > 0 ? streetParts.join(', ') : null;
+  const city = remaining[cityIdx];
+
+  console.log('📝 parseDisplayName result:', { street, city, postalCode });
+  return {
+    street: street || null,
+    city: city || null,
+    postalCode: postalCode || null,
+  };
+}
 
 function getCacheKey(query) {
-  return `nominatim_${query.toLowerCase().trim()}`;
+  const normalized = query.toLowerCase().trim().replace(/[\p{P}]/gu, '').replace(/\s+/g, ' ');
+  return `nominatim_${normalized}`;
 }
 
 function getCachedResults(query) {
@@ -47,7 +154,7 @@ function clearCache(query) {
   }
 }
 
-export { getCacheKey, getCachedResults, setCachedResults, clearCache };
+export { getCacheKey, getCachedResults, setCachedResults, clearCache, parseDisplayName };
 
 export function useNominatimSearch() {
   const [isSearching, setIsSearching] = useState(false);
@@ -111,37 +218,55 @@ export function useNominatimSearch() {
 
       const data = await response.json();
 
-      const results = data
-        .filter(item => item.lat && item.lon)
-        .map(item => {
-          const address = item.address || {};
-          const number = address.house_number || '';
-          const road = address.road || '';
-          const city = address.city || address.town || address.village || address.suburb || '';
-          const postalCode = address.postcode || '';
+      console.log('🔍 Nominatim response:', JSON.stringify(data, null, 2));
 
-          const parts = [];
-          if (number) parts.push(number);
-          if (road) parts.push(road);
-          if (city) parts.push(city);
-          if (postalCode) parts.push(postalCode);
+      const processedResults = await Promise.all(
+        data
+          .filter(item => item.lat && item.lon)
+          .map(async item => {
+            const address = item.address || {};
+            console.log('📦 item address:', JSON.stringify(address), 'road:', address.road, 'house_number:', address.house_number);
+            const number = address.house_number || '';
+            const road = address.road || '';
+            let street = [number, road].filter(Boolean).join(' ') || null;
+            let city = address.city || address.town || address.village || address.suburb || null;
+            let postalCode = address.postcode || null;
 
-          const formatted = parts.length > 0
-            ? parts.join(', ')
-            : item.display_name;
+            if (!street || !city) {
+              const parsed = await parseDisplayName(item.display_name);
+              if (!parsed) return null;
+              if (!street) street = parsed.street;
+              if (!city) city = parsed.city;
+              if (!street || !city) return null;
+              if (!postalCode) postalCode = parsed.postalCode;
+            }
 
-          return {
-            lat: parseFloat(item.lat),
-            lng: parseFloat(item.lon),
-            name: formatted,
-            display_name: item.display_name,
-          };
-        });
+            const parts = [];
+            if (street) parts.push(street);
+            if (city) parts.push(city);
+            if (postalCode) parts.push(postalCode);
+
+            const formatted = parts.length > 0
+              ? parts.join(', ')
+              : item.display_name;
+
+            return {
+              lat: parseFloat(item.lat),
+              lng: parseFloat(item.lon),
+              name: formatted,
+              display_name: item.display_name,
+            };
+          })
+      );
+
+      const results = processedResults.filter(r => r && r.name);
+      console.log('✅ results:', results);
 
       setCachedResults(trimmed, results);
       return results;
     } catch (err) {
       if (err.name === 'AbortError') return [];
+      console.error('❌ Search error:', err, err.message);
       setError('Impossible de rechercher. Vérifiez votre connexion.');
       return [];
     } finally {

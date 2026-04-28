@@ -36,12 +36,22 @@ describe('useNominatimSearch', () => {
       {
         lat: '46.77',
         lon: '-71.28',
-        display_name: 'Ste-Foy, Quebec, Canada',
+        display_name: 'Rue Ste-Foy, Quebec, QC, Canada',
+        address: {
+          road: 'Rue Ste-Foy',
+          city: 'Quebec',
+          postcode: 'G1R',
+        }
       },
       {
         lat: '46.78',
         lon: '-71.27',
-        display_name: 'Ste-Foy–Sillery, Quebec, Canada',
+        display_name: 'Avenue Sillery, Quebec, QC, Canada',
+        address: {
+          road: 'Avenue Sillery',
+          city: 'Quebec',
+          postcode: 'G1K',
+        }
       }
     ];
 
@@ -58,8 +68,8 @@ describe('useNominatimSearch', () => {
     });
 
     expect(results).toEqual([
-      { lat: 46.77, lng: -71.28, name: 'Ste-Foy, Quebec, Canada', display_name: 'Ste-Foy, Quebec, Canada' },
-      { lat: 46.78, lng: -71.27, name: 'Ste-Foy–Sillery, Quebec, Canada', display_name: 'Ste-Foy–Sillery, Quebec, Canada' }
+      { lat: 46.77, lng: -71.28, name: 'Rue Ste-Foy, Quebec, G1R', display_name: 'Rue Ste-Foy, Quebec, QC, Canada' },
+      { lat: 46.78, lng: -71.27, name: 'Avenue Sillery, Quebec, G1K', display_name: 'Avenue Sillery, Quebec, QC, Canada' }
     ]);
   });
 
@@ -90,41 +100,26 @@ describe('useNominatimSearch', () => {
       results = await result.current.search('1234 sainte-catherine');
     });
 
-    expect(results[0].name).toBe('1234, Rue Sainte-Catherine, Montréal, H3G 1P3');
+    expect(results[0].name).toBe('1234 Rue Sainte-Catherine, Montréal, H3G 1P3');
     expect(results[0].display_name).toBe('1234 Rue Sainte-Catherine, Montreal, QC H3G 1P3, Canada');
   });
 
-  it('falls back to display_name when address object is missing', async () => {
-    const nominatimResponse = [
-      {
-        lat: '45.5017',
-        lon: '-73.5673',
-        display_name: 'Place du Canada, Montreal, QC, Canada'
-      }
-    ];
-
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => nominatimResponse
-    });
-
-    const { result } = renderHook(() => useNominatimSearch());
-
-    let results;
-    await act(async () => {
-      results = await result.current.search('place du canada');
-    });
-
-    expect(results[0].name).toBe('Place du Canada, Montreal, QC, Canada');
-  });
-
-  it('uses display_name when address object has no usable fields', async () => {
+  it('filters out results without address', async () => {
     const nominatimResponse = [
       {
         lat: '45.5017',
         lon: '-73.5673',
         display_name: 'Montreal, QC, Canada',
         address: {}
+      },
+      {
+        lat: '45.5018',
+        lon: '-73.5674',
+        display_name: 'Rue Sainte-Catherine, Montreal, QC, Canada',
+        address: {
+          road: 'Rue Sainte-Catherine',
+          city: 'Montréal',
+        }
       }
     ];
 
@@ -140,7 +135,8 @@ describe('useNominatimSearch', () => {
       results = await result.current.search('montreal');
     });
 
-    expect(results[0].name).toBe('Montreal, QC, Canada');
+    expect(results).toHaveLength(1);
+    expect(results[0].name).toBe('Rue Sainte-Catherine, Montréal');
   });
 
   it('caches results after API call', async () => {

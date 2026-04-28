@@ -189,11 +189,11 @@ describe('CitySearchInput', () => {
 
     // Wait for results
     await waitFor(() => {
-      expect(screen.getByText('1234, Rue Sainte-Catherine, Montreal, QC')).toBeInTheDocument();
+      expect(screen.getByText('1234 Rue Sainte-Catherine, Montreal, QC')).toBeInTheDocument();
     });
 
     // Select the result
-    await fireEvent.click(screen.getByText('1234, Rue Sainte-Catherine, Montreal, QC'));
+    await fireEvent.click(screen.getByText('1234 Rue Sainte-Catherine, Montreal, QC'));
 
     // Toggle should have auto-reset: placeholder should be back to city mode
     expect(screen.getByPlaceholderText(/rechercher une ville/i)).toBeInTheDocument();
@@ -201,7 +201,7 @@ describe('CitySearchInput', () => {
     // Callback should have been called with address source
     expect(mockCallback).toHaveBeenCalledWith(
       { lat: 45.5017, lng: -73.5673, source: 'address' },
-      '1234, Rue Sainte-Catherine, Montreal, QC'
+      '1234 Rue Sainte-Catherine, Montreal, QC'
     );
   });
 
@@ -334,7 +334,7 @@ describe('CitySearchInput', () => {
     await fireEvent.click(searchBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('1234, Rue Sainte-Catherine, Montréal, H3G 1P3')).toBeInTheDocument();
+      expect(screen.getByText('1234 Rue Sainte-Catherine, Montréal, H3G 1P3')).toBeInTheDocument();
     });
   });
 
