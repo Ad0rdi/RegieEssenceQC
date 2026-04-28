@@ -1020,4 +1020,91 @@ body[data-theme="dark"] .leaflet-gps-btn {
   display: flex;
 }
 
+/* Map click confirmation popup */
+.map-confirm-popup {
+  font-family: sans-serif;
+  font-size: 13px;
+  padding: 2px;
+  min-width: 180px;
+}
+
+.map-confirm-text {
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.map-confirm-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.map-confirm-btn {
+  padding: 5px 16px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--bg);
+  color: var(--text-primary);
+  min-width: 50px;
+}
+
+.map-confirm-yes {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.map-confirm-yes:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.map-confirm-no {
+  background: var(--bg);
+}
+
+.map-confirm-no:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent-blue);
+}
+
+body[data-theme="dark"] .map-confirm-btn {
+  color: #f3f4f6;
+}
+
+body[data-theme="dark"] .map-confirm-popup {
+  color: #f3f4f6;
+}
+
+body[data-theme="dark"] .map-confirm-yes {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+body[data-theme="dark"] .map-confirm-yes:hover {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
+body[data-theme="dark"] .map-confirm-no:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+body[data-theme="dark"] .map-confirm-popup-container .leaflet-popup-tip {
+  background-color: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+body[data-theme="dark"] .map-confirm-popup-container .leaflet-popup-content-wrapper {
+  background-color: #1f2937;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
 
