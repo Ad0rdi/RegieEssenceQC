@@ -297,7 +297,7 @@ useEffect(() => {
         <StationDrawer stations={filteredFeatures} onStationClick={handleDrawerStationClick} selectedStationId={selectedStationId} centerLocation={centerLocation} />
         <MapContainer
           center={mapCenter}
-          zoom={mapZoom}
+          zoom={centerLocation && centerLocation.source !== 'map' ? GPS_ZOOM : DEFAULT_ZOOM}
           wheelPxPerZoomLevel={WHEEL_PX_PER_ZOOM_LEVEL}
           zoomSnap={ZOOM_SNAP}
           zoomDelta={ZOOM_DELTA}
