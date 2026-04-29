@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import L from 'leaflet';
 
+const LONG_PRESS_THRESHOLD = 300;
+
 const MapClickHandler = ({ onMapClick }) => {
   const map = useMap();
   const isMobile = useIsMobile();
@@ -10,10 +12,14 @@ const MapClickHandler = ({ onMapClick }) => {
   const pendingLocationRef = useRef(null);
   const popupRef = useRef(null);
   const [pendingLocation, setPendingLocation] = useState(null);
-  const stationPopupClosingRef = useRef(false);
+  const stationPopupOpenRef = useRef(false);
+  const pressStartTimeRef = useRef(0);
+  const clickHandlerRef = useRef(null);
+  const pressStartRef = useRef(null);
 
   useEffect(() => {
     onMapClickRef.current = onMapClick;
+
     const handleMapClick = (e) => {
       const target = e.originalEvent.target;
       const controlClasses = [
@@ -37,20 +43,8 @@ const MapClickHandler = ({ onMapClick }) => {
         return;
       }
 
-      let hasOpenStationPopup = false;
-      map.eachLayer((layer) => {
-        if (layer.getPopup && !layer._isLocationPopup) {
-          const popup = layer.getPopup();
-          if (popup && popup.isOpen()) {
-            hasOpenStationPopup = true;
-          }
-        }
-      });
-
-      if (hasOpenStationPopup) return;
-
-      if (stationPopupClosingRef.current) {
-        stationPopupClosingRef.current = false;
+      if (stationPopupOpenRef.current) {
+        stationPopupOpenRef.current = false;
         return;
       }
 
@@ -77,11 +71,19 @@ const MapClickHandler = ({ onMapClick }) => {
 
       e.originalEvent.preventDefault();
 
+      const elapsed = Date.now() - pressStartTimeRef.current;
+      if (elapsed < LONG_PRESS_THRESHOLD) return;
+
       if (popupRef.current) {
         map.removeLayer(popupRef.current);
         popupRef.current = null;
         pendingLocationRef.current = null;
         setPendingLocation(null);
+        return;
+      }
+
+      if (stationPopupOpenRef.current) {
+        stationPopupOpenRef.current = false;
         return;
       }
 
@@ -100,38 +102,73 @@ const MapClickHandler = ({ onMapClick }) => {
       setPendingLocation(null);
     };
 
-    const onPopupClose = () => {
-      stationPopupClosingRef.current = true;
+    const onPopupOpen = (e) => {
+      if (!e.popup || e.popup._isLocationPopup) return;
+      stationPopupOpenRef.current = true;
     };
 
-    const onPreClick = () => {
-      requestAnimationFrame(() => {
-        stationPopupClosingRef.current = false;
+    const onPopupClose = (e) => {
+      if (!e.popup || e.popup._isLocationPopup) return;
+      Promise.resolve().then(() => {
+        stationPopupOpenRef.current = false;
       });
     };
 
-    map.on('popupclose', onPopupClose);
-    map.on('preclick', onPreClick);
+    // Mobile tap handler: closes popup only, never opens
+    clickHandlerRef.current = (e) => {
+      const target = e.originalEvent.target;
+      const controlClasses = [
+        'leaflet-marker-icon',
+        'leaflet-control',
+        'leaflet-gps-btn',
+        'leaflet-custom-zoom',
+        'leaflet-bar',
+      ];
+      for (const cls of controlClasses) {
+        if (target.classList?.contains(cls)) return;
+      }
+      const el = target.closest?.('.leaflet-control, .leaflet-gps-btn, .leaflet-custom-zoom, .leaflet-bar, .leaflet-marker-icon');
+      if (el) return;
+
+      // Tap = close only
+      if (popupRef.current) {
+        map.removeLayer(popupRef.current);
+        popupRef.current = null;
+        pendingLocationRef.current = null;
+        setPendingLocation(null);
+      }
+    };
+
+    // Touch start: records press time for long press detection
+    pressStartRef.current = () => {
+      pressStartTimeRef.current = Date.now();
+    };
 
     if (!isMobile) {
       map.on('click', handleMapClick);
     }
 
     if (isMobile) {
+      map.on('click', clickHandlerRef.current);
       map.on('contextmenu', handleContextmenu);
+      map.on('touchstart mousedown', pressStartRef.current);
     }
 
+    map.on('popupopen', onPopupOpen);
+    map.on('popupclose', onPopupClose);
     map.on('moveend zoomend', clearPopup);
 
     return () => {
+      map.off('popupopen', onPopupOpen);
       map.off('popupclose', onPopupClose);
-      map.off('preclick', onPreClick);
       map.off('moveend zoomend', clearPopup);
       if (!isMobile) {
         map.off('click', handleMapClick);
       }
       if (isMobile) {
+        map.off('click', clickHandlerRef.current);
         map.off('contextmenu', handleContextmenu);
+        map.off('touchstart mousedown', pressStartRef.current);
       }
       if (popupRef.current) {
         map.removeLayer(popupRef.current);
@@ -180,11 +217,12 @@ const MapClickHandler = ({ onMapClick }) => {
       className: 'map-confirm-popup-container',
     })
       .setLatLng([pendingLocation.lat, pendingLocation.lng])
-      .setContent(popupHtml)
-      .addTo(map);
+      .setContent(popupHtml);
+
+    popup._isLocationPopup = true;
+    popup.addTo(map);
 
     popupRef.current = popup;
-    popup._isLocationPopup = true;
     const popupEl = popup.getElement();
     if (popupEl) {
       L.DomEvent.disableClickPropagation(popupEl);

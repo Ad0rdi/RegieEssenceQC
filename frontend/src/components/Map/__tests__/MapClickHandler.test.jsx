@@ -8,7 +8,7 @@ const mockMap = {
   getPane: vi.fn(),
   createPane: vi.fn(),
   removeLayer: vi.fn(),
-  eachLayer: vi.fn((cb) => {}),
+  eachLayer: vi.fn(),
   hasLayer: vi.fn(() => false),
 };
 
@@ -112,7 +112,18 @@ describe('MapClickHandler', () => {
     });
   }
 
-  async function fireContextmenu(lat, lng, target = {}) {
+  async function fireContextmenu(lat, lng, target = {}, pressDelay = 500) {
+    const origNow = Date.now;
+    const startTime = Date.now() - pressDelay;
+    Date.now = () => startTime;
+
+    await act(async () => {
+      handlers.touchstart?.();
+      handlers.mousedown?.();
+    });
+
+    Date.now = () => startTime + pressDelay;
+
     const preventDefault = vi.fn();
     await act(async () => {
       handlers.contextmenu({
@@ -120,6 +131,8 @@ describe('MapClickHandler', () => {
         originalEvent: { target, preventDefault },
       });
     });
+
+    Date.now = origNow;
     return preventDefault;
   }
 
@@ -239,16 +252,23 @@ describe('MapClickHandler', () => {
     expect(mockLMock.popup.mock.calls.length).toBe(1);
   });
 
-  it('mobile: click does NOT show popup', async () => {
+  it('mobile: click (tap) does NOT show popup when no popup is open', async () => {
     useIsMobileMock.mockReturnValue(true);
 
     render(<MapClickHandler onMapClick={mockCallback} />);
 
     await waitFor(() => {
       expect(mockMap.on).toHaveBeenCalledWith('contextmenu', expect.any(Function));
+      expect(mockMap.on).toHaveBeenCalledWith('click', expect.any(Function));
     });
 
-    expect(handlers.click).toBeUndefined();
+    // Tap on empty map should NOT open a popup
+    await act(async () => {
+      handlers.click({
+        latlng: { lat: 46.0, lng: -74.0 },
+        originalEvent: { target: {} },
+      });
+    });
 
     expect(mockLMock.popup).not.toHaveBeenCalled();
     expect(mockCallback).not.toHaveBeenCalled();
@@ -268,7 +288,7 @@ describe('MapClickHandler', () => {
     });
   });
 
-  it('mobile: contextmenu on marker does NOT show popup', async () => {
+ it('mobile: contextmenu on marker does NOT show popup', async () => {
     useIsMobileMock.mockReturnValue(true);
 
     render(<MapClickHandler onMapClick={mockCallback} />);
@@ -281,6 +301,33 @@ describe('MapClickHandler', () => {
     expect(mockLMock.popup).not.toHaveBeenCalled();
     expect(mockCallback).not.toHaveBeenCalled();
     expect(preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('mobile: click (tap) with open popup closes it', async () => {
+    useIsMobileMock.mockReturnValue(true);
+
+    render(<MapClickHandler onMapClick={mockCallback} />);
+
+    // Open popup via long press
+    await fireContextmenu(45.5, -73.6);
+
+    await waitFor(() => {
+      expect(mockLMock.popup).toHaveBeenCalled();
+    });
+
+    const popupCallCount = mockLMock.popup.mock.calls.length;
+
+    // Tap to close
+    await act(async () => {
+      handlers.click({
+        latlng: { lat: 46.0, lng: -74.0 },
+        originalEvent: { target: {} },
+      });
+    });
+
+    // Popup was removed (removeLayer called), not reopened
+    expect(mockMap.removeLayer).toHaveBeenCalled();
+    expect(mockLMock.popup.mock.calls.length).toBe(popupCallCount);
   });
 
   it('popup is cleaned up on unmount', async () => {
@@ -331,26 +378,14 @@ describe('MapClickHandler', () => {
     expect(mockMap.removeLayer).toHaveBeenCalled();
   });
 
-  it('desktop: closing station popup prevents marker popup on next click', async () => {
+  it('desktop: click with open station popup does NOT show marker popup', async () => {
     render(<MapClickHandler onMapClick={mockCallback} />);
 
-    // First click opens a location marker popup
-    await fireClick(45.5, -73.6);
-
-    await waitFor(() => {
-      expect(mockLMock.popup).toHaveBeenCalled();
-    });
-
-    // Simulate station popup closing via Leaflet's popupclose event
+    // Simulate station popup opening
     await act(async () => {
-      handlers.popupclose?.();
-      handlers.preclick?.();
-      await new Promise(r => setTimeout(r, 0));
+      handlers.popupopen?.({ popup: {} });
     });
 
-    const popupCallCount = mockLMock.popup.mock.calls.length;
-
-    // Click elsewhere should NOT create another popup
     await act(async () => {
       handlers.click({
         latlng: { lat: 46.0, lng: -74.0 },
@@ -358,6 +393,40 @@ describe('MapClickHandler', () => {
       });
     });
 
-    expect(mockLMock.popup.mock.calls.length).toBe(popupCallCount);
+    // Should NOT create a new popup
+    expect(mockLMock.popup).not.toHaveBeenCalled();
   });
-});
+
+  it('desktop: location popup open event does not affect stationPopupOpen', async () => {
+    render(<MapClickHandler onMapClick={mockCallback} />);
+
+    // Simulate location popup opening
+    await act(async () => {
+      handlers.popupopen?.({ popup: { _isLocationPopup: true } });
+    });
+
+    await act(async () => {
+      handlers.click({
+        latlng: { lat: 46.0, lng: -74.0 },
+        originalEvent: { target: {} },
+      });
+    });
+
+    // Should create a popup
+    expect(mockLMock.popup).toHaveBeenCalled();
+  });
+
+  it('desktop: click with no open popup DOES show marker popup', async () => {
+    render(<MapClickHandler onMapClick={mockCallback} />);
+
+    await act(async () => {
+      handlers.click({
+        latlng: { lat: 46.0, lng: -74.0 },
+        originalEvent: { target: {} },
+      });
+    });
+
+    // Should create a popup
+    expect(mockLMock.popup).toHaveBeenCalled();
+  });
+  });
