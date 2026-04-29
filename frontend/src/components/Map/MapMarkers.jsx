@@ -31,8 +31,8 @@ function formatPopupHTML(station, selectedFuelTypes) {
     });
 
   return `<div style="font-family:sans-serif;font-size:13px;padding:4px 0;min-width:180px">
-    <strong style="font-size:14px">${station.name || 'N/A'}</strong>
-    <div style="color:#666;margin:2px 0">${station.brand || 'N/A'}</div>
+    <strong style="font-size:14px">${station.brand || 'N/A'}</strong>
+    <div style="color:#666;margin:2px 0">${station.name || 'N/A'}</div>
     <div style="color:#666;margin:2px 0">${station.address || 'N/A'}</div>
     <hr style="border:none;border-top:1px solid #e5e4e7;margin:6px 0">
     ${priceEntries.join('')}
