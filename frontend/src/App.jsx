@@ -18,6 +18,7 @@ import CitySearchInput from './components/Map/CitySearchInput';
 import CityZoomController from './components/Map/CityZoomController';
 import GpsButton from './components/Map/GpsButton';
 import MapClickHandler from './components/Map/MapClickHandler';
+import ManualLocationMarker from './components/Map/ManualLocationMarker';
 import ZoomButtons from './components/Map/ZoomButtons';
 import StationDrawerButton from './components/Map/StationDrawerButton';
 import { calculateDistance } from './utils/geolocation';
@@ -128,8 +129,8 @@ useEffect(() => {
   const handleLocationSelect = useCallback((location) => {
       setCenterLocation(location);
       if (location.source === 'address') {
-        setAddressLocation({ lat: location.lat, lng: location.lng });
-        setManualMarkerLocation(null);
+        setManualMarkerLocation({ lat: location.lat, lng: location.lng });
+        setAddressLocation(null);
       } else if (location.source === 'map') {
         setManualMarkerLocation({ lat: location.lat, lng: location.lng });
         setAddressLocation(null);
@@ -212,7 +213,6 @@ useEffect(() => {
   );
 
   const mapCenter = centerLocation ? [centerLocation.lat, centerLocation.lng] : DEFAULT_CENTER;
-  const mapZoom = centerLocation ? GPS_ZOOM : DEFAULT_ZOOM;
 
  return (
     <div className="app-container">
@@ -326,9 +326,9 @@ useEffect(() => {
             selectedFuelType={pricingFuelType}
           />
           {selectedStation && <MapController station={selectedStation} source={selectedStationSource} />}
-          {centerLocation && <CityZoomController city={centerLocation} />}
+          {centerLocation && centerLocation.source !== 'map' && <CityZoomController city={centerLocation} />}
           {addressLocation && <AddressMarker location={addressLocation} />}
-          {manualMarkerLocation && <AddressMarker location={manualMarkerLocation} />}
+          {manualMarkerLocation && <ManualLocationMarker location={manualMarkerLocation} />}
           <MapClickHandler onMapClick={handleLocationSelect} />
         </MapContainer>
       </div>
