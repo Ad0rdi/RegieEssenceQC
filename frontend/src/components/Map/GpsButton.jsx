@@ -15,7 +15,8 @@ export default function GpsButton({ onGpsClick }) {
     if (successReceivedRef.current) return;
   };
 
-  const handleGpsClick = () => {
+  const handleGpsClick = (e) => {
+    e.stopPropagation();
     if (!navigator.geolocation) {
       alert("La géolocalisation n'est pas supportée par ce navigateur.");
       return;

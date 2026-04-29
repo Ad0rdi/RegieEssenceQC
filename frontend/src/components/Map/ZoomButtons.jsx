@@ -11,7 +11,8 @@ export default function ZoomButtons() {
     <div className="leaflet-custom-zoom">
       <button
         className="leaflet-custom-zoom-btn"
-        onClick={() => {
+        onClick={(e) => {
+          e.stopPropagation();
           const currentZoom = map.getZoom();
           if (currentZoom < MAX_ZOOM) map.setZoom(currentZoom + ZOOM_DELTA);
         }}
@@ -21,7 +22,8 @@ export default function ZoomButtons() {
       </button>
       <button
         className="leaflet-custom-zoom-btn"
-        onClick={() => {
+        onClick={(e) => {
+          e.stopPropagation();
           const currentZoom = map.getZoom();
           if (currentZoom > MIN_ZOOM) map.setZoom(currentZoom - ZOOM_DELTA);
         }}
