@@ -16,6 +16,7 @@ Thumbs.db
 .vscode/
 .idea/
 .opencode/
+opencode.json
 *.swp
 *.swo
 
@@ -38,3 +39,5 @@ venv/
 docs/
 
 .superpowers/
+
+AGENTS.md
