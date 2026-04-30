@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 
 const DOT_RADIUS = 6;
-const GPS_PANE_Z_INDEX = 800;
+const GPS_PANE_Z_INDEX = 600;
 
 function UserLocationMarker({ location }) {
   const map = useMap();

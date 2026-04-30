@@ -212,6 +212,13 @@ useEffect(() => {
     [filteredFeatures, selectedStationId]
   );
 
+  useEffect(() => {
+    if (!filteredFeatures.some(s => s.id === selectedStationId)) {
+      setSelectedStationId(null);
+      setSelectedStationSource(null);
+    }
+  }, [filteredFeatures, selectedStationId]);
+
   const mapCenter = centerLocation ? [centerLocation.lat, centerLocation.lng] : DEFAULT_CENTER;
 
  return (
