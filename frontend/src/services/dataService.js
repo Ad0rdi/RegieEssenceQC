@@ -31,7 +31,8 @@ export const fetchStations = async (retries = MAX_RETRIES) => {
     const arrayBuffer = await response.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    return processData(uint8Array);
+    const parsed = processData(uint8Array);
+    return parsed;
   } catch (err) {
     if (retries <= 0) {
       throw err;

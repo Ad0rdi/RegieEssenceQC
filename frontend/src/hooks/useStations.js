@@ -5,6 +5,7 @@ function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [generatedAt, setGeneratedAt] = useState(null);
   const prevFuelTypesRef = useRef(null);
 
   useEffect(() => {
@@ -86,6 +87,7 @@ function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
           );
 
         setStations(transformedStations);
+        setGeneratedAt(data?.metadata?.generated_at ?? null);
         setError(null);
       } catch (err) {
         if (err.name !== 'AbortError') {
@@ -105,7 +107,7 @@ function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
     };
   }, [JSON.stringify(selectedFuelTypes)]);
 
-  return { stations, loading, error };
+  return { stations, loading, error, generatedAt };
 }
 
 export { useStations };

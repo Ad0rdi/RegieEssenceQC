@@ -44,7 +44,7 @@ function AppContent() {
   const { selectedFuelTypes, drawerOpen, setDrawerOpen } = useFilters();
    const { theme, toggleTheme } = useTheme();
   const pricingFuelType = selectedFuelTypes.length > 0 ? selectedFuelTypes[0] : 'regular';
-  const { stations, loading, error } = useStations(selectedFuelTypes);
+  const { stations, loading, error, generatedAt } = useStations(selectedFuelTypes);
   const [centerLocation, setCenterLocation] = useState(null);
    const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
     const [radiusFilter, setRadiusFilter] = useState(null);
@@ -311,19 +311,22 @@ useEffect(() => {
           zoomControl={false}
           style={{ height: '100%', width: '100%' }}
         >
-          <div className="leaflet-bottom-controls">
-            {!isMobile && <ZoomButtons />}
-            <GpsButton onGpsClick={(pos) => setGpsLocation(pos)} />
-          </div>
+        <div className="leaflet-bottom-controls">
+             {!isMobile && <ZoomButtons />}
+             <GpsButton onGpsClick={(pos) => setGpsLocation(pos)} />
+             <div className="data-update-label">
+               Données mises à jour le {generatedAt ? new Date(generatedAt.slice(0, 23) + 'Z').toLocaleString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '...'}
+             </div>
+           </div>
           <StationDrawerButton
             stationCount={filteredFeatures.length}
             drawerOpen={drawerOpen}
             onToggle={() => setDrawerOpen(!drawerOpen)}
           />
           <TileLayer
-            attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+           />
           <UserLocationMarker location={gpsMarkerPosition} />
           <MapMarkers
             stations={filteredFeatures}
