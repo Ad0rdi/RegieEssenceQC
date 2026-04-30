@@ -2,7 +2,7 @@ import { useMap } from 'react-leaflet';
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 
-const MapController = ({ station, source }) => {
+const MapController = ({ station, source, isMobile }) => {
   const map = useMap();
   const moveendHandlerRef = useRef(null);
   const popupStationRef = useRef(null);
@@ -14,28 +14,44 @@ const MapController = ({ station, source }) => {
     const currentZoom = map.getZoom();
     const targetZoom = 15;
 
-    // Calculate actual distance in km between current center and station
     const currentLatLng = L.latLng(currentCenter.lat, currentCenter.lng);
     const targetLatLng = L.latLng(station.lat, station.lng);
     const distanceKm = currentLatLng.distanceTo(targetLatLng) / 1000;
 
-    // Scale duration based on distance (base 0.5s, ~100km adds 1s)
     const distanceDuration = 0.5 + distanceKm / 60;
 
-    // Drawer clicks always flyTo to zoom in; map clicks only pan if already zoomed in
-    const isDrawerClick = source === 'drawer';
-    const shouldZoom = isDrawerClick || currentZoom < targetZoom;
+    let targetCenter = [station.lat, station.lng];
 
-    if (!shouldZoom && currentZoom >= targetZoom) {
+    // On mobile: offset center so station appears in middle of visible area
+    // (below header, not at geometric center hidden by header)
+    if (isMobile) {
+      const mapEl = map.getContainer();
+      const headerEl = document.querySelector('.app-header');
+      if (mapEl && headerEl) {
+        const mapHeight = mapEl.clientHeight;
+        const headerHeight = headerEl.getBoundingClientRect().height;
+        // Visible center = header bottom + half of remaining visible height
+        // = headerHeight + (mapHeight - headerHeight) / 2
+        // Distance from map geometric center: visibleCenterY - mapHeight/2 = headerHeight/2
+        const pixelOffset = headerHeight / 2;
+
+        // Project station to target zoom, shift projected Y upward (so station appears lower on screen)
+        const projected = map.project(targetLatLng, targetZoom);
+        const adjustedProjected = L.point(projected.x, projected.y - pixelOffset);
+        const adjustedLatLng = map.unproject(adjustedProjected, targetZoom);
+        targetCenter = [adjustedLatLng.lat, adjustedLatLng.lng];
+      }
+    }
+
+    if (!isMobile && currentZoom >= targetZoom) {
       map.panTo([station.lat, station.lng], { duration: 0.5 });
     } else {
-      map.flyTo([station.lat, station.lng], targetZoom, {
+      map.flyTo(targetCenter, targetZoom, {
         duration: Math.min(distanceDuration, 5),
         easeLinearity: 0.25
       });
     }
 
-    // Store station to reopen popup after animation
     popupStationRef.current = station;
 
     moveendHandlerRef.current = () => {
@@ -62,7 +78,7 @@ const MapController = ({ station, source }) => {
         map.off('moveend', moveendHandlerRef.current);
       }
     };
-  }, [station, source, map]);
+  }, [station, source, isMobile, map]);
 
   return null;
 };

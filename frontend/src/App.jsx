@@ -325,7 +325,7 @@ useEffect(() => {
             selectedFuelTypes={selectedFuelTypes}
             selectedFuelType={pricingFuelType}
           />
-          {selectedStation && <MapController station={selectedStation} source={selectedStationSource} />}
+          {selectedStation && <MapController station={selectedStation} source={selectedStationSource} isMobile={isMobile} />}
           {centerLocation && centerLocation.source !== 'map' && <CityZoomController city={centerLocation} />}
           {addressLocation && <AddressMarker location={addressLocation} />}
           {manualMarkerLocation && <ManualLocationMarker location={manualMarkerLocation} />}
