@@ -41,3 +41,6 @@ docs/
 .superpowers/
 
 AGENTS.md
+
+# Worktrees
+.worktrees/
