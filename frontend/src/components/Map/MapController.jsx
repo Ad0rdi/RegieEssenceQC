@@ -1,6 +1,7 @@
 import { useMap } from 'react-leaflet';
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
+import { mapAnimatingRef, stationPopupOpenRef } from './mapInteractionState';
 
 const MapController = ({ station, source, isMobile }) => {
   const map = useMap();
@@ -11,8 +12,7 @@ const MapController = ({ station, source, isMobile }) => {
     if (!station) return;
 
     const currentCenter = map.getCenter();
-    const currentZoom = map.getZoom();
-    const targetZoom = 15;
+    const targetZoom = Math.max(map.getZoom(), 15);
 
     const currentLatLng = L.latLng(currentCenter.lat, currentCenter.lng);
     const targetLatLng = L.latLng(station.lat, station.lng);
@@ -28,11 +28,7 @@ const MapController = ({ station, source, isMobile }) => {
       const mapEl = map.getContainer();
       const headerEl = document.querySelector('.app-header');
       if (mapEl && headerEl) {
-        const mapHeight = mapEl.clientHeight;
         const headerHeight = headerEl.getBoundingClientRect().height;
-        // Visible center = header bottom + half of remaining visible height
-        // = headerHeight + (mapHeight - headerHeight) / 2
-        // Distance from map geometric center: visibleCenterY - mapHeight/2 = headerHeight/2
         const pixelOffset = headerHeight / 2;
 
         // Project station to target zoom, shift projected Y upward (so station appears lower on screen)
@@ -43,15 +39,15 @@ const MapController = ({ station, source, isMobile }) => {
       }
     }
 
-    if (!isMobile && currentZoom >= targetZoom) {
-      map.panTo([station.lat, station.lng], { duration: 0.5 });
-    } else {
-      map.flyTo(targetCenter, targetZoom, {
-        duration: Math.min(distanceDuration, 5),
-        easeLinearity: 0.25
-      });
+    if (source === 'cluster') {
+      return;
     }
+    map.flyTo(targetCenter, targetZoom, {
+      duration: Math.min(distanceDuration, 5),
+      easeLinearity: 0.25
+    });
 
+    mapAnimatingRef.current = true;
     popupStationRef.current = station;
 
     moveendHandlerRef.current = () => {
@@ -59,16 +55,29 @@ const MapController = ({ station, source, isMobile }) => {
 
       if (popupStationRef.current) {
         const { lat, lng } = popupStationRef.current;
+        let popupOpened = false;
         map.eachLayer((layer) => {
           const pos = layer.getLatLng ? layer.getLatLng() : null;
           if (pos && Math.abs(pos.lat - lat) < 0.0001 && Math.abs(pos.lng - lng) < 0.0001) {
-            if (layer.getPopup() && !layer.isPopupOpen()) {
+            if (layer.isPopupOpen()) return;
+            if (layer.getPopup()) {
               layer.openPopup();
-            }
+            } else if (layer._popupContent) {
+               L.popup()
+                 .setLatLng(layer.getLatLng())
+                 .setContent(layer._popupContent)
+                 .openOn(map);
+             }
+            popupOpened = true;
             popupStationRef.current = null;
           }
-        });
+       });
+
+        if (popupOpened) {
+          stationPopupOpenRef.current = true;
+        }
       }
+      mapAnimatingRef.current = false;
     };
 
     map.on('moveend', moveendHandlerRef.current);
