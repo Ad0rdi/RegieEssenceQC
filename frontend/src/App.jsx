@@ -46,14 +46,21 @@ function AppContent() {
   const pricingFuelType = selectedFuelTypes.length > 0 ? selectedFuelTypes[0] : 'regular';
   const { stations, loading, error, generatedAt } = useStations(selectedFuelTypes);
   const [centerLocation, setCenterLocation] = useState(null);
+
+  const stableCenterLocation = useMemo(() => {
+    if (!centerLocation) return null;
+    return centerLocation;
+  }, [centerLocation?.lat, centerLocation?.lng]);
    const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
     const [radiusFilter, setRadiusFilter] = useState(null);
-  const [selectedStationId, setSelectedStationId] = useState(null);
+const [selectedStationId, setSelectedStationId] = useState(null);
   const [selectedStationSource, setSelectedStationSource] = useState(null);
+  const [selectedClusterKey, setSelectedClusterKey] = useState(0);
+  const [selectedStationClickCount, setSelectedStationClickCount] = useState(0);
     const [gpsMarkerPosition, setGpsMarkerPosition] = useState(null);
     useEffect(() => {
-      window.__GPS_STATE = { markerPosition: gpsMarkerPosition, centerLocation };
-    }, [gpsMarkerPosition, centerLocation]);
+      window.__GPS_STATE = { markerPosition: gpsMarkerPosition, centerLocation: stableCenterLocation };
+    }, [gpsMarkerPosition, stableCenterLocation]);
   
   const setGpsLocation = useCallback((position) => {
     if (position) {
@@ -91,13 +98,13 @@ useEffect(() => {
             );
 
            watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                  if (
-                    Math.abs(position.coords.latitude - lastWatchedLat) < 0.00001 &&
-                    Math.abs(position.coords.longitude - lastWatchedLng) < 0.00001
-                  ) {
-                    return;
-                  }
+                 (position) => {
+                   if (
+                     Math.abs(position.coords.latitude - lastWatchedLat) < 0.00001 &&
+                     Math.abs(position.coords.longitude - lastWatchedLng) < 0.00001
+                   ) {
+                     return;
+                   }
                   lastWatchedLat = position.coords.latitude;
                   lastWatchedLng = position.coords.longitude;
 
@@ -181,9 +188,9 @@ useEffect(() => {
         
         // 2. Radius Filter Check
         let passesRadius = true;
-        if (centerLocation && radiusFilter !== null) {
+        if (stableCenterLocation && radiusFilter !== null) {
           const distanceKm = calculateDistance(
-            centerLocation.lat, centerLocation.lng,
+            stableCenterLocation.lat, stableCenterLocation.lng,
             station.lat, station.lng
           );
           
@@ -195,16 +202,26 @@ useEffect(() => {
         return passesPrice && passesRadius;
       });
     },
-    [stations, priceFilter, radiusFilter, centerLocation, selectedFuelTypes]);
+    [stations, priceFilter, radiusFilter, stableCenterLocation, selectedFuelTypes]);
 
   const handleStationClick = (station) => {
     setSelectedStationId(station.id);
     setSelectedStationSource('map');
+    setSelectedStationClickCount(prev => prev + 1);
   };
 
   const handleDrawerStationClick = (station) => {
     setSelectedStationId(station.id);
     setSelectedStationSource('drawer');
+    setSelectedStationClickCount(prev => prev + 1);
+  };
+
+ const handleClusterClick = (clusterStations) => {
+    if (clusterStations && clusterStations.length > 0) {
+      setSelectedStationId(clusterStations[0].id);
+      setSelectedStationSource('cluster');
+      setSelectedClusterKey(prev => prev + 1);
+    }
   };
 
   const selectedStation = useMemo(() => 
@@ -219,7 +236,7 @@ useEffect(() => {
     }
   }, [filteredFeatures, selectedStationId]);
 
-  const mapCenter = centerLocation ? [centerLocation.lat, centerLocation.lng] : DEFAULT_CENTER;
+  const mapCenter = stableCenterLocation ? [stableCenterLocation.lat, stableCenterLocation.lng] : DEFAULT_CENTER;
 
  return (
     <div className="app-container">
@@ -301,10 +318,10 @@ useEffect(() => {
       </div>
 
       <div className="map-container">
-        <StationDrawer stations={filteredFeatures} onStationClick={handleDrawerStationClick} selectedStationId={selectedStationId} centerLocation={centerLocation} />
+        <StationDrawer stations={filteredFeatures} onStationClick={handleDrawerStationClick} selectedStationId={selectedStationId} centerLocation={stableCenterLocation} />
         <MapContainer
           center={mapCenter}
-          zoom={centerLocation && centerLocation.source !== 'map' ? GPS_ZOOM : DEFAULT_ZOOM}
+          zoom={stableCenterLocation && stableCenterLocation.source !== 'map' ? GPS_ZOOM : DEFAULT_ZOOM}
           wheelPxPerZoomLevel={WHEEL_PX_PER_ZOOM_LEVEL}
           zoomSnap={ZOOM_SNAP}
           zoomDelta={ZOOM_DELTA}
@@ -329,14 +346,15 @@ useEffect(() => {
            />
           <UserLocationMarker location={gpsMarkerPosition} />
           <MapMarkers
-            stations={filteredFeatures}
-            selectedStationId={selectedStationId}
-            onStationClick={handleStationClick}
-            selectedFuelTypes={selectedFuelTypes}
-            selectedFuelType={pricingFuelType}
-          />
-          {selectedStation && <MapController station={selectedStation} source={selectedStationSource} isMobile={isMobile} />}
-          {centerLocation && centerLocation.source !== 'map' && <CityZoomController city={centerLocation} />}
+             stations={filteredFeatures}
+             selectedStationId={selectedStationId}
+             onStationClick={handleStationClick}
+             onClusterClick={handleClusterClick}
+             selectedFuelTypes={selectedFuelTypes}
+             selectedFuelType={pricingFuelType}
+           />
+          {selectedStation && <MapController key={`${selectedClusterKey}-${selectedStation.id}-${selectedStationClickCount}`} station={selectedStation} source={selectedStationSource} isMobile={isMobile} />}
+          {stableCenterLocation && stableCenterLocation.source !== 'map' && <CityZoomController city={stableCenterLocation} />}
           {addressLocation && <AddressMarker location={addressLocation} />}
           {manualMarkerLocation && <ManualLocationMarker location={manualMarkerLocation} />}
           <MapClickHandler onMapClick={handleLocationSelect} />

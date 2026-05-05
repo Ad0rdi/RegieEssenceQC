@@ -21,15 +21,6 @@ function UserLocationMarker({ location }) {
   useEffect(() => {
     if (!location) return;
 
-    const gpsPane = map.getPane('gps-marker-pane');
-
-    if (dotRef.current) {
-      map.removeLayer(dotRef.current);
-    }
-    if (circleRef.current) {
-      map.removeLayer(circleRef.current);
-    }
-
     const accuracy = location.accuracy ?? 50;
 
     const centerLatLng = L.latLng(location.lat, location.lng);
@@ -40,30 +31,43 @@ function UserLocationMarker({ location }) {
 
     const ringPixelRadius = Math.abs(northPixel.y - centerPixel.y);
 
-    circleRef.current = L.circle([location.lat, location.lng], {
-      radius: accuracy,
-      color: '#3b82f6',
-      fillColor: '#3b82f6',
-      fillOpacity: ringPixelRadius < 10 ? 0.08 : 0.15,
-      weight: 1,
-      opacity: ringPixelRadius < 10 ? 0.2 : 0.3,
-      pane: 'gps-marker-pane',
-    }).addTo(map);
+    if (dotRef.current) {
+      dotRef.current.setLatLng(centerLatLng);
+      dotRef.current.bringToFront();
+    }
 
-    dotRef.current = L.circleMarker([location.lat, location.lng], {
-      radius: DOT_RADIUS,
-      color: '#3b82f6',
-      fillColor: '#3b82f6',
-      fillOpacity: 0.9,
-      weight: 2,
-      opacity: 1,
-      pane: 'gps-marker-pane',
-    }).addTo(map);
+    if (circleRef.current) {
+      circleRef.current.setLatLng(centerLatLng);
+      circleRef.current.setStyle({
+        fillOpacity: ringPixelRadius < 10 ? 0.08 : 0.15,
+        opacity: ringPixelRadius < 10 ? 0.2 : 0.3,
+      });
+    } else {
+      circleRef.current = L.circle([location.lat, location.lng], {
+        radius: accuracy,
+        color: '#3b82f6',
+        fillColor: '#3b82f6',
+        fillOpacity: ringPixelRadius < 10 ? 0.08 : 0.15,
+        weight: 1,
+        opacity: ringPixelRadius < 10 ? 0.2 : 0.3,
+        pane: 'gps-marker-pane',
+      }).addTo(map);
+      L.DomEvent.disableClickPropagation(circleRef.current);
+    }
 
-    dotRef.current.bringToFront();
-    dotRef.current.getElement().style.pointerEvents = 'none';
-
-    L.DomEvent.disableClickPropagation(circleRef.current);
+    if (!dotRef.current) {
+      dotRef.current = L.circleMarker([location.lat, location.lng], {
+        radius: DOT_RADIUS,
+        color: '#3b82f6',
+        fillColor: '#3b82f6',
+        fillOpacity: 0.9,
+        weight: 2,
+        opacity: 1,
+        pane: 'gps-marker-pane',
+      }).addTo(map);
+      dotRef.current.bringToFront();
+      dotRef.current.getElement().style.pointerEvents = 'none';
+    }
   }, [location, map]);
 
   useEffect(() => {

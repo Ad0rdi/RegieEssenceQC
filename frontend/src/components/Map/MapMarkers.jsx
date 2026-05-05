@@ -1,13 +1,46 @@
 import { useMap } from 'react-leaflet';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet.markercluster';
 import { calculateAllPriceLevels, getFuelPieIcon } from './mapIcons';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import { pendingMarkerClickState } from './mapInteractionState';
+import { clusterFlyToState } from './mapInteractionState';
 
-// Module-level ref for MapController to reopen popup after flyTo animation
-export const popupMarker = { ref: null };
+function setupClusterCaptureListener(map, markerClusterPane) {
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        if (node.classList?.contains('marker-cluster')) {
+          const handler = (e) => {
+            if (pendingMarkerClickState.suppressClickRef.current) {
+              e.stopImmediatePropagation();
+              e.stopPropagation();
+            }
+          };
+          node._clusterCaptureHandler = handler;
+          node.addEventListener('click', handler, { capture: true });
+        }
+      }
+    }
+  });
+  observer.observe(markerClusterPane, { childList: true });
+
+  for (const node of markerClusterPane.querySelectorAll?.('.marker-cluster') ?? []) {
+    const handler = (e) => {
+      if (pendingMarkerClickState.suppressClickRef.current) {
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+      }
+    };
+    node._clusterCaptureHandler = handler;
+    node.addEventListener('click', handler, { capture: true });
+  }
+
+  return observer;
+}
 
 function formatPopupHTML(station, selectedFuelTypes) {
   const prices = station.prices || {};
@@ -39,59 +72,241 @@ function formatPopupHTML(station, selectedFuelTypes) {
   </div>`;
 }
 
-function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelTypes, selectedFuelType }) {
+function MapMarkers({ stations, selectedStationId, onStationClick, onClusterClick, selectedFuelTypes, selectedFuelType }) {
   const map = useMap();
   const clusterGroupRef = useRef(null);
   const onStationClickRef = useRef(onStationClick);
+  const onClusterClickRef = useRef(onClusterClick);
+  const clusterCaptureObserverRef = useRef(null);
+  const clusterClickHandlerRef = useRef(null);
+  const [viewportBounds, setViewportBounds] = useState(null);
 
-  // Keep callback ref up to date without triggering effect re-runs
+  // Keep callback refs up to date without triggering effect re-runs
   useEffect(() => {
     onStationClickRef.current = onStationClick;
   }, [onStationClick]);
 
+  useEffect(() => {
+    onClusterClickRef.current = onClusterClick;
+  }, [onClusterClick]);
+
+  // Clear cluster flyTo flag on map moveend
+  useEffect(() => {
+    const onClusterFlyMoveEnd = () => {
+      clusterFlyToState.active = false;
+      map.off('moveend', onClusterFlyMoveEnd);
+    };
+    map.on('moveend', onClusterFlyMoveEnd);
+    return () => map.off('moveend', onClusterFlyMoveEnd);
+  }, [map]);
+
+  // Track viewport bounds on map moveend
+  useEffect(() => {
+    const updateBounds = () => {
+      const bounds = map.getBounds();
+      setViewportBounds([
+        bounds.getSouthWest().lat,
+        bounds.getSouthWest().lng,
+        bounds.getNorthEast().lat,
+        bounds.getNorthEast().lng,
+      ]);
+    };
+    map.on('moveend', updateBounds);
+    updateBounds();
+    return () => {
+      map.off('moveend', updateBounds);
+    };
+  }, [map]);
+
+  // Filter stations by viewport bounds
+  const visibleStations = useMemo(() => {
+    if (!viewportBounds || viewportBounds.length < 4) return stations;
+    
+    const southWest = L.latLng(viewportBounds[0], viewportBounds[1]);
+    const northEast = L.latLng(viewportBounds[2], viewportBounds[3]);
+    const bounds = L.latLngBounds(southWest, northEast);
+    
+    return stations.filter(station => {
+      const point = L.latLng(station.lat, station.lng);
+      return bounds.contains(point);
+    });
+  }, [stations, viewportBounds]);
+
   // Create a stable key from station data to trigger recreation only when markers change
-  const dataKey = stations?.map(s => `${s.id}-${s.lat}-${s.lng}`).sort().join('|') || '';
+  const dataKey = visibleStations?.map(s => `${s.id}-${s.lat}-${s.lng}`).sort().join('|') || '';
   const fuelKey = selectedFuelTypes?.sort().join('|') || '';
 
   useEffect(() => {
-    // Create cluster group if needed, or recreate if cleanup removed it
-    if (!clusterGroupRef.current || !map.hasLayer(clusterGroupRef.current)) {
-      const newClusterGroup = L.markerClusterGroup({
-        maxClusterRadius: 50,
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-        zoomToBoundsOnClick: true,
-      });
+   if (!clusterGroupRef.current || !map.hasLayer(clusterGroupRef.current)) {
+ const newClusterGroup = L.markerClusterGroup({
+          maxClusterRadius: 50,
+          spiderfyOnMaxZoom: true,
+          showCoverageOnHover: false,
+          zoomToBoundsOnClick: false,
+        });
       clusterGroupRef.current = newClusterGroup;
       map.addLayer(newClusterGroup);
+
+      const markerClusterPane = map.getPane('markerClusterPane') || map.getPane('overlayPane');
+      if (markerClusterPane) {
+        if (clusterCaptureObserverRef.current) {
+          clusterCaptureObserverRef.current.disconnect();
+        }
+        clusterCaptureObserverRef.current = setupClusterCaptureListener(map, markerClusterPane);
+      }
     }
 
-    const fuelLevelsMap = calculateAllPriceLevels(stations, selectedFuelTypes);
+   // Bind cluster click handler using Leaflet's clusterclick event on the cluster group
+    const group = clusterGroupRef.current;
+const clusterClickHandler = (e) => {
+      L.DomEvent.preventDefault(e);
+      if (pendingMarkerClickState.suppressClickRef.current) {
+        pendingMarkerClickState.suppressClickRef.current = false;
+        if (pendingMarkerClickState.timeoutRef.current) {
+          clearTimeout(pendingMarkerClickState.timeoutRef.current);
+          pendingMarkerClickState.timeoutRef.current = null;
+        }
+        pendingMarkerClickState.ref.current = null;
+        return;
+      }
+      if (pendingMarkerClickState.timeoutRef.current && pendingMarkerClickState.ref.current !== true) {
+        clearTimeout(pendingMarkerClickState.timeoutRef.current);
+        pendingMarkerClickState.timeoutRef.current = null;
+        pendingMarkerClickState.suppressClickRef.current = true;
+      }
+      if (pendingMarkerClickState.timeoutRef.current) {
+        clearTimeout(pendingMarkerClickState.timeoutRef.current);
+        pendingMarkerClickState.timeoutRef.current = null;
+      }
+      const cluster = e.layer;
+      pendingMarkerClickState.ref.current = true;
+      pendingMarkerClickState.timeoutRef.current = setTimeout(() => {
+        if (pendingMarkerClickState.suppressClickRef.current) {
+          pendingMarkerClickState.suppressClickRef.current = false;
+          pendingMarkerClickState.timeoutRef.current = null;
+          pendingMarkerClickState.ref.current = null;
+          return;
+        }
+        if (pendingMarkerClickState.touchPhaseRef.current === 'ZOOM_DRAG') {
+          pendingMarkerClickState.timeoutRef.current = null;
+          pendingMarkerClickState.ref.current = null;
+          return;
+        }
+        // Zoom to cluster bounds with animation
+        const clusterBounds = cluster.getBounds ? cluster.getBounds() : null;
+        if (clusterBounds) {
+          clusterFlyToState.active = true;
+          map.flyToBounds(clusterBounds, { padding: [70, 70], maxZoom: 18, duration: 1 });
+        }
+        // Collect stations and select the first one
+        const childLayers = cluster?.getAllChildMarkers?.() ?? [];
+        const clusterStations = [];
+        for (const layer of childLayers) {
+          if (layer._stationData) {
+            clusterStations.push(layer._stationData);
+          }
+        }
+        if (clusterStations.length > 0) {
+          onClusterClickRef.current(clusterStations);
+        }
+        pendingMarkerClickState.timeoutRef.current = null;
+        pendingMarkerClickState.ref.current = null;
+      }, pendingMarkerClickState.ZOOM_DRAG_TIMEOUT);
+    };
+if (clusterClickHandlerRef.current) {
+        group.off('clusterclick', clusterClickHandlerRef.current);
+      }
+      clusterClickHandlerRef.current = clusterClickHandler;
+      group.on('clusterclick', clusterClickHandler);
 
-    // Clear existing markers (doesn't destroy cluster group)
+    const fuelLevelsMap = calculateAllPriceLevels(stations, selectedFuelTypes);
     clusterGroupRef.current.clearLayers();
 
-    stations.forEach((station) => {
-      const markerOptions = { icon: getFuelPieIcon(selectedFuelTypes, fuelLevelsMap, station.id) };
-      const marker = L.marker(
-        [station.lat, station.lng],
-        markerOptions
-      ).bindPopup(formatPopupHTML(station, selectedFuelTypes))
-      .on('click', () => {
-        onStationClickRef.current(station);
-        popupMarker.ref = marker;
-        marker.openPopup();
+     visibleStations.forEach((station) => {
+       const markerOptions = { icon: getFuelPieIcon(selectedFuelTypes, fuelLevelsMap, station.id) };
+       const popupContent = formatPopupHTML(station, selectedFuelTypes);
+       const marker = L.marker(
+          [station.lat, station.lng],
+          markerOptions
+        );
+        marker._stationData = station;
+        marker._popupContent = popupContent;
+marker.on('click', (e) => {
+         L.DomEvent.stopPropagation(e);
+         if (pendingMarkerClickState.suppressClickRef.current) {
+           pendingMarkerClickState.suppressClickRef.current = false;
+           if (pendingMarkerClickState.timeoutRef.current) {
+             clearTimeout(pendingMarkerClickState.timeoutRef.current);
+             pendingMarkerClickState.timeoutRef.current = null;
+           }
+           pendingMarkerClickState.ref.current = null;
+           return;
+         }
+         if (pendingMarkerClickState.timeoutRef.current && pendingMarkerClickState.ref.current === true) {
+           clearTimeout(pendingMarkerClickState.timeoutRef.current);
+           pendingMarkerClickState.timeoutRef.current = null;
+           pendingMarkerClickState.suppressClickRef.current = true;
+         }
+         if (pendingMarkerClickState.timeoutRef.current) {
+           clearTimeout(pendingMarkerClickState.timeoutRef.current);
+           pendingMarkerClickState.timeoutRef.current = null;
+         }
+         pendingMarkerClickState.ref.current = marker;
+        pendingMarkerClickState.timeoutRef.current = setTimeout(() => {
+          if (pendingMarkerClickState.suppressClickRef.current) {
+            pendingMarkerClickState.suppressClickRef.current = false;
+            pendingMarkerClickState.timeoutRef.current = null;
+            pendingMarkerClickState.ref.current = null;
+            return;
+          }
+          if (pendingMarkerClickState.touchPhaseRef.current === 'ZOOM_DRAG') {
+            pendingMarkerClickState.timeoutRef.current = null;
+            pendingMarkerClickState.ref.current = null;
+            return;
+          }
+          onStationClickRef.current(station);
+          pendingMarkerClickState.timeoutRef.current = null;
+          pendingMarkerClickState.ref.current = null;
+        }, pendingMarkerClickState.ZOOM_DRAG_TIMEOUT);
       });
 
       clusterGroupRef.current.addLayer(marker);
     });
 
+    // Also add the selected station marker even if outside viewport bounds
+    if (selectedStationId) {
+      const selectedInCluster = visibleStations.some(s => s.id === selectedStationId);
+      if (!selectedInCluster) {
+        const selected = stations.find(s => s.id === selectedStationId);
+        if (selected) {
+          const markerOptions = { icon: getFuelPieIcon(selectedFuelTypes, fuelLevelsMap, selected.id) };
+          const popupContent = formatPopupHTML(selected, selectedFuelTypes);
+          const marker = L.marker([selected.lat, selected.lng], markerOptions);
+          marker._stationData = selected;
+          marker._popupContent = popupContent;
+          clusterGroupRef.current.addLayer(marker);
+        }
+      }
+    }
+
     return () => {
+      if (clusterGroupRef.current && clusterClickHandlerRef.current) {
+        clusterGroupRef.current.off('clusterclick', clusterClickHandlerRef.current);
+      }
       if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
         map.removeLayer(clusterGroupRef.current);
       }
+      if (clusterCaptureObserverRef.current) {
+        clusterCaptureObserverRef.current.disconnect();
+        clusterCaptureObserverRef.current = null;
+      }
+      if (pendingMarkerClickState.timeoutRef.current) {
+        clearTimeout(pendingMarkerClickState.timeoutRef.current);
+        pendingMarkerClickState.timeoutRef.current = null;
+      }
+      pendingMarkerClickState.ref.current = null;
     };
-  }, [dataKey, fuelKey, stations, selectedFuelTypes, selectedFuelType, map]);
+  }, [dataKey, fuelKey, visibleStations, stations, selectedFuelTypes, selectedFuelType, selectedStationId, map]);
 
   return null;
 }
