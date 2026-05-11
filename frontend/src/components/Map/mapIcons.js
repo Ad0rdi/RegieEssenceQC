@@ -72,7 +72,7 @@ function getFuelPieIcon(selectedFuelTypes, levelsMap, stationId) {
     const ey2 = cy + innerR * Math.sin(endAngle);
     const largeArc = sliceDeg > 180 ? 1 : 0;
 
-    svgParts.push('<path d="M ' + cx + ' ' + cy + ' L ' + ex1.toFixed(2) + ' ' + ey1.toFixed(2) + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + ex2.toFixed(2) + ' ' + ey2.toFixed(2) + ' Z" fill="' + color + '" stroke="#fff" stroke-width="' + strokeW + '" stroke-linejoin="round"/>');
+    svgParts.push('<path d="M ' + cx + ' ' + cy + ' L ' + ex1.toFixed(2) + ' ' + ey1.toFixed(2) + ' A ' + innerR + ' ' + innerR + ' 0 ' + largeArc + ' 1 ' + ex2.toFixed(2) + ' ' + ey2.toFixed(2) + ' Z" fill="' + color + '" stroke="#fff" stroke-width="' + strokeW + '" stroke-linejoin="round"/>');
   }
 
   svgParts.push('</svg>');
