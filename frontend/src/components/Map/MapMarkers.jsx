@@ -38,7 +38,7 @@ function formatPopupHTML(station, selectedFuelTypes) {
   </div>`;
 }
 
-function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelTypes, selectedFuelType }) {
+function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelTypes }) {
   const map = useMap();
   const clusterGroupRef = useRef(null);
   const onStationClickRef = useRef(onStationClick);
@@ -250,7 +250,7 @@ marker.on('click', (e) => {
       }
       pendingMarkerClickState.ref.current = null;
     };
-  }, [dataKey, fuelKey, visibleStations, stations, selectedFuelTypes, selectedFuelType, selectedStationId, map]);
+  }, [dataKey, fuelKey, visibleStations, stations, selectedFuelTypes, selectedStationId, map]);
 
   return null;
 }

@@ -43,7 +43,6 @@ function AppContent() {
   const isMobile = useIsMobile();
   const { selectedFuelTypes, drawerOpen, setDrawerOpen } = useFilters();
    const { theme, toggleTheme } = useTheme();
-  const pricingFuelType = selectedFuelTypes.length > 0 ? selectedFuelTypes[0] : 'regular';
   const { stations, loading, error, generatedAt } = useStations(selectedFuelTypes);
   const [centerLocation, setCenterLocation] = useState(null);
 
@@ -346,12 +345,11 @@ useEffect(() => {
            />
           <UserLocationMarker location={gpsMarkerPosition} />
           <MapMarkers
-             stations={filteredFeatures}
-             selectedStationId={selectedStationId}
-             onStationClick={handleStationClick}
-             selectedFuelTypes={selectedFuelTypes}
-             selectedFuelType={pricingFuelType}
-           />
+              stations={filteredFeatures}
+              selectedStationId={selectedStationId}
+              onStationClick={handleStationClick}
+              selectedFuelTypes={selectedFuelTypes}
+            />
           {selectedStation && <MapController key={`${selectedClusterKey}-${selectedStation.id}-${selectedStationClickCount}`} station={selectedStation} source={selectedStationSource} isMobile={isMobile} />}
           {stableCenterLocation && stableCenterLocation.source !== 'map' && <CityZoomController city={stableCenterLocation} />}
           {addressLocation && <AddressMarker location={addressLocation} />}
