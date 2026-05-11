@@ -1,12 +1,25 @@
 import L from 'leaflet';
 import { PRICING_COLORS } from './mapIcons';
 
+/**
+ * Builds the HTML string for a cluster marker with count badge.
+ *
+ * @param {string} count - Number of stations in the cluster
+ * @param {string} background - CSS background (color or conic-gradient)
+ * @returns {string} HTML string for the cluster marker
+ */
 function buildClusterHTML(count, background) {
-  var innerStyle = 'width:32px;height:32px;border-radius:8px;border:4px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3), 0 0 0 2px rgba(0,0,0,0.15);position:relative;background:' + background + ';';
-  var badgeStyle = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #888;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#000;';
-  return '<div class="cluster-marker-inner" style="' + innerStyle + '"><div class="cluster-badge" style="' + badgeStyle + '">' + count + '</div></div>';
+  return '<div class="cluster-marker-inner" style="background:' + background + '"><div class="cluster-badge">' + count + '</div></div>';
 }
 
+/**
+ * Generates a custom cluster marker icon for leaflet.markercluster.
+ *
+ * @param {Object[]} stations - Array of station objects with id and prices
+ * @param {string[]} selectedFuelTypes - Fuel types to display as pie slices
+ * @param {Map} fuelLevelsMap - Map of fuel type -> Map of station id -> price level ('low'|'medium'|'high')
+ * @returns {L.DivIcon} Leaflet divIcon for the cluster marker
+ */
 function getClusterIcon(stations, selectedFuelTypes, fuelLevelsMap) {
   if (!stations || stations.length === 0) {
     return L.divIcon({
@@ -17,7 +30,7 @@ function getClusterIcon(stations, selectedFuelTypes, fuelLevelsMap) {
     });
   }
 
-  var n = selectedFuelTypes ? selectedFuelTypes.length : 0;
+  const n = selectedFuelTypes ? selectedFuelTypes.length : 0;
 
   if (n === 0) {
     return L.divIcon({
@@ -28,20 +41,20 @@ function getClusterIcon(stations, selectedFuelTypes, fuelLevelsMap) {
     });
   }
 
-  var slices = [];
+  const slices = [];
 
-  for (var i = 0; i < n; i++) {
-    var fuelType = selectedFuelTypes[i];
-    var start = (i / n) * 100;
-    var end = ((i + 1) / n) * 100;
+  for (let i = 0; i < n; i++) {
+    const fuelType = selectedFuelTypes[i];
+    const start = (i / n) * 100;
+    const end = ((i + 1) / n) * 100;
 
-    var cheapestStation = null;
-    var cheapestPrice = Infinity;
+    let cheapestStation = null;
+    let cheapestPrice = Infinity;
 
-    for (var j = 0; j < stations.length; j++) {
-      var station = stations[j];
+    for (let j = 0; j < stations.length; j++) {
+      const station = stations[j];
       if (!station || !station.prices) continue;
-      var price = station.prices[fuelType];
+      const price = station.prices[fuelType];
       if (price == null) continue;
       if (price < cheapestPrice) {
         cheapestPrice = price;
@@ -49,10 +62,10 @@ function getClusterIcon(stations, selectedFuelTypes, fuelLevelsMap) {
       }
     }
 
-    var color = '#888';
+    let color = '#888';
     if (cheapestStation) {
-      var stationLevels = fuelLevelsMap ? fuelLevelsMap.get(fuelType) : null;
-      var level = stationLevels ? stationLevels.get(cheapestStation.id) : null;
+      const stationLevels = fuelLevelsMap ? fuelLevelsMap.get(fuelType) : null;
+      const level = stationLevels ? stationLevels.get(cheapestStation.id) : null;
       if (level && PRICING_COLORS[level]) {
         color = PRICING_COLORS[level];
       }
@@ -61,7 +74,7 @@ function getClusterIcon(stations, selectedFuelTypes, fuelLevelsMap) {
     slices.push(color + ' ' + start + '% ' + end + '%');
   }
 
-  var gradient = 'conic-gradient(' + slices.join(', ') + ')';
+  const gradient = 'conic-gradient(' + slices.join(', ') + ')';
 
   return L.divIcon({
     className: 'cluster-marker',
