@@ -349,7 +349,6 @@ useEffect(() => {
              stations={filteredFeatures}
              selectedStationId={selectedStationId}
              onStationClick={handleStationClick}
-             onClusterClick={handleClusterClick}
              selectedFuelTypes={selectedFuelTypes}
              selectedFuelType={pricingFuelType}
            />

@@ -38,7 +38,7 @@ function formatPopupHTML(station, selectedFuelTypes) {
   </div>`;
 }
 
-function MapMarkers({ stations, selectedStationId, onStationClick, onClusterClick, selectedFuelTypes, selectedFuelType }) {
+function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelTypes, selectedFuelType }) {
   const map = useMap();
   const clusterGroupRef = useRef(null);
   const onStationClickRef = useRef(onStationClick);
@@ -97,6 +97,7 @@ function MapMarkers({ stations, selectedStationId, onStationClick, onClusterClic
   const fuelKey = selectedFuelTypes?.sort().join('|') || '';
 
   useEffect(() => {
+    const fuelLevelsMap = calculateAllPriceLevels(stations, selectedFuelTypes);
    if (!clusterGroupRef.current || !map.hasLayer(clusterGroupRef.current)) {
  const newClusterGroup = L.markerClusterGroup({
           maxClusterRadius: 50,
@@ -167,7 +168,6 @@ if (clusterClickHandlerRef.current) {
       clusterClickHandlerRef.current = clusterClickHandler;
       group.on('clusterclick', clusterClickHandler);
 
-    const fuelLevelsMap = calculateAllPriceLevels(stations, selectedFuelTypes);
     clusterGroupRef.current.clearLayers();
 
      visibleStations.forEach((station) => {
