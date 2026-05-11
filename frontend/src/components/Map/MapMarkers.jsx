@@ -4,43 +4,9 @@ import L from 'leaflet';
 import 'leaflet.markercluster';
 import { calculateAllPriceLevels, getFuelPieIcon } from './mapIcons';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import { getClusterIcon } from './clusterIcons';
 import { pendingMarkerClickState } from './mapInteractionState';
 import { clusterFlyToState } from './mapInteractionState';
-
-function setupClusterCaptureListener(map, markerClusterPane) {
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const node of mutation.addedNodes) {
-        if (node.nodeType !== 1) continue;
-        if (node.classList?.contains('marker-cluster')) {
-          const handler = (e) => {
-            if (pendingMarkerClickState.suppressClickRef.current) {
-              e.stopImmediatePropagation();
-              e.stopPropagation();
-            }
-          };
-          node._clusterCaptureHandler = handler;
-          node.addEventListener('click', handler, { capture: true });
-        }
-      }
-    }
-  });
-  observer.observe(markerClusterPane, { childList: true });
-
-  for (const node of markerClusterPane.querySelectorAll?.('.marker-cluster') ?? []) {
-    const handler = (e) => {
-      if (pendingMarkerClickState.suppressClickRef.current) {
-        e.stopImmediatePropagation();
-        e.stopPropagation();
-      }
-    };
-    node._clusterCaptureHandler = handler;
-    node.addEventListener('click', handler, { capture: true });
-  }
-
-  return observer;
-}
 
 function formatPopupHTML(station, selectedFuelTypes) {
   const prices = station.prices || {};
@@ -76,8 +42,6 @@ function MapMarkers({ stations, selectedStationId, onStationClick, onClusterClic
   const map = useMap();
   const clusterGroupRef = useRef(null);
   const onStationClickRef = useRef(onStationClick);
-  const onClusterClickRef = useRef(onClusterClick);
-  const clusterCaptureObserverRef = useRef(null);
   const clusterClickHandlerRef = useRef(null);
   const [viewportBounds, setViewportBounds] = useState(null);
 
@@ -85,10 +49,6 @@ function MapMarkers({ stations, selectedStationId, onStationClick, onClusterClic
   useEffect(() => {
     onStationClickRef.current = onStationClick;
   }, [onStationClick]);
-
-  useEffect(() => {
-    onClusterClickRef.current = onClusterClick;
-  }, [onClusterClick]);
 
   // Clear cluster flyTo flag on map moveend
   useEffect(() => {
@@ -143,17 +103,16 @@ function MapMarkers({ stations, selectedStationId, onStationClick, onClusterClic
           spiderfyOnMaxZoom: true,
           showCoverageOnHover: false,
           zoomToBoundsOnClick: false,
+          iconCreateFunction: (cluster) => {
+            const childMarkers = cluster.getAllChildMarkers();
+            const clusterStations = childMarkers
+              .map(m => m._stationData)
+              .filter(s => s != null);
+            return getClusterIcon(clusterStations, selectedFuelTypes, fuelLevelsMap);
+          },
         });
       clusterGroupRef.current = newClusterGroup;
       map.addLayer(newClusterGroup);
-
-      const markerClusterPane = map.getPane('markerClusterPane') || map.getPane('overlayPane');
-      if (markerClusterPane) {
-        if (clusterCaptureObserverRef.current) {
-          clusterCaptureObserverRef.current.disconnect();
-        }
-        clusterCaptureObserverRef.current = setupClusterCaptureListener(map, markerClusterPane);
-      }
     }
 
    // Bind cluster click handler using Leaflet's clusterclick event on the cluster group
@@ -197,17 +156,6 @@ const clusterClickHandler = (e) => {
         if (clusterBounds) {
           clusterFlyToState.active = true;
           map.flyToBounds(clusterBounds, { padding: [70, 70], maxZoom: 18, duration: 1 });
-        }
-        // Collect stations and select the first one
-        const childLayers = cluster?.getAllChildMarkers?.() ?? [];
-        const clusterStations = [];
-        for (const layer of childLayers) {
-          if (layer._stationData) {
-            clusterStations.push(layer._stationData);
-          }
-        }
-        if (clusterStations.length > 0) {
-          onClusterClickRef.current(clusterStations);
         }
         pendingMarkerClickState.timeoutRef.current = null;
         pendingMarkerClickState.ref.current = null;
@@ -295,10 +243,6 @@ marker.on('click', (e) => {
       }
       if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
         map.removeLayer(clusterGroupRef.current);
-      }
-      if (clusterCaptureObserverRef.current) {
-        clusterCaptureObserverRef.current.disconnect();
-        clusterCaptureObserverRef.current = null;
       }
       if (pendingMarkerClickState.timeoutRef.current) {
         clearTimeout(pendingMarkerClickState.timeoutRef.current);
