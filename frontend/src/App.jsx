@@ -54,7 +54,6 @@ function AppContent() {
     const [radiusFilter, setRadiusFilter] = useState(null);
 const [selectedStationId, setSelectedStationId] = useState(null);
   const [selectedStationSource, setSelectedStationSource] = useState(null);
-  const [selectedClusterKey, setSelectedClusterKey] = useState(0);
   const [selectedStationClickCount, setSelectedStationClickCount] = useState(0);
     const [gpsMarkerPosition, setGpsMarkerPosition] = useState(null);
     useEffect(() => {
@@ -215,15 +214,7 @@ useEffect(() => {
     setSelectedStationClickCount(prev => prev + 1);
   };
 
- const handleClusterClick = (clusterStations) => {
-    if (clusterStations && clusterStations.length > 0) {
-      setSelectedStationId(clusterStations[0].id);
-      setSelectedStationSource('cluster');
-      setSelectedClusterKey(prev => prev + 1);
-    }
-  };
-
-  const selectedStation = useMemo(() => 
+ const selectedStation = useMemo(() => 
     filteredFeatures.find(s => s.id === selectedStationId),
     [filteredFeatures, selectedStationId]
   );
@@ -350,7 +341,7 @@ useEffect(() => {
               onStationClick={handleStationClick}
               selectedFuelTypes={selectedFuelTypes}
             />
-          {selectedStation && <MapController key={`${selectedClusterKey}-${selectedStation.id}-${selectedStationClickCount}`} station={selectedStation} source={selectedStationSource} isMobile={isMobile} />}
+          {selectedStation && <MapController key={`${selectedStation.id}-${selectedStationClickCount}`} station={selectedStation} source={selectedStationSource} isMobile={isMobile} />}
           {stableCenterLocation && stableCenterLocation.source !== 'map' && <CityZoomController city={stableCenterLocation} />}
           {addressLocation && <AddressMarker location={addressLocation} />}
           {manualMarkerLocation && <ManualLocationMarker location={manualMarkerLocation} />}
