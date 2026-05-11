@@ -45,17 +45,13 @@ function getFuelPieIcon(selectedFuelTypes, levelsMap, stationId) {
     });
   }
 
-  const size = 28;
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = 13;
-  const strokeW = 2;
-  const innerR = r - strokeW / 2;
   const n = selectedFuelTypes.length;
-  const sliceDeg = 360 / n;
+  const size = 28;
+  const cx = 14;
+  const cy = 14;
   const PI = Math.PI;
 
-  const svgParts = ['<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">'];
+  const svgParts = ['<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="display:block;">'];
 
   for (let i = 0; i < n; i++) {
     const fuelType = selectedFuelTypes[i];
@@ -63,16 +59,21 @@ function getFuelPieIcon(selectedFuelTypes, levelsMap, stationId) {
     const level = stationLevels ? stationLevels.get(stationId) : null;
     const color = level ? PRICING_COLORS[level] : '#888';
 
-    const startAngle = (i * sliceDeg - 90) * PI / 180;
-    const endAngle = ((i + 1) * sliceDeg - 90) * PI / 180;
+    if (n === 1) {
+      svgParts.push('<circle cx="' + cx + '" cy="' + cy + '" r="14" fill="' + color + '"/>');
+    } else {
+      const sliceDeg = 360 / n;
+      const startAngle = (i * sliceDeg - 90) * PI / 180;
+      const endAngle = ((i + 1) * sliceDeg - 90) * PI / 180;
 
-    const ex1 = cx + innerR * Math.cos(startAngle);
-    const ey1 = cy + innerR * Math.sin(startAngle);
-    const ex2 = cx + innerR * Math.cos(endAngle);
-    const ey2 = cy + innerR * Math.sin(endAngle);
-    const largeArc = sliceDeg > 180 ? 1 : 0;
+      const x1 = cx + 14 * Math.cos(startAngle);
+      const y1 = cy + 14 * Math.sin(startAngle);
+      const x2 = cx + 14 * Math.cos(endAngle);
+      const y2 = cy + 14 * Math.sin(endAngle);
+      const largeArc = sliceDeg > 180 ? 1 : 0;
 
-    svgParts.push('<path d="M ' + cx + ' ' + cy + ' L ' + ex1.toFixed(2) + ' ' + ey1.toFixed(2) + ' A ' + innerR + ' ' + innerR + ' 0 ' + largeArc + ' 1 ' + ex2.toFixed(2) + ' ' + ey2.toFixed(2) + ' Z" fill="' + color + '" stroke="#fff" stroke-width="' + strokeW + '" stroke-linejoin="round"/>');
+      svgParts.push('<path d="M ' + cx + ' ' + cy + ' L ' + x1.toFixed(2) + ' ' + y1.toFixed(2) + ' A 14 14 0 ' + largeArc + ' 1 ' + x2.toFixed(2) + ' ' + y2.toFixed(2) + ' Z" fill="' + color + '" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>');
+    }
   }
 
   svgParts.push('</svg>');
@@ -80,7 +81,7 @@ function getFuelPieIcon(selectedFuelTypes, levelsMap, stationId) {
 
   return L.divIcon({
     className: 'price-marker fuel-pie-marker',
-    html: '<div style="width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex!important;align-items:center;justify-content:center;"><div style="width:28px;height:28px;border-radius:50%;overflow:hidden;">' + svg + '</div></div>',
+    html: '<div style="width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">' + svg + '</div>',
     iconSize: [28, 28],
     iconAnchor: [14, 14],
   });

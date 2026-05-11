@@ -1,31 +1,16 @@
 import L from 'leaflet';
 import { PRICING_COLORS } from './mapIcons';
 
-/**
- * Builds the HTML string for a cluster marker with count badge.
- *
- * @param {string} count - Number of stations in the cluster
- * @param {string} svg - SVG pie chart markup
- * @returns {string} HTML string for the cluster marker
- */
 function buildClusterHTML(count, svg) {
   return '<div class="cluster-marker-inner">' + svg + '</div><div class="cluster-badge">' + count + '</div>';
 }
 
-/**
- * Generates a custom cluster marker icon for leaflet.markercluster.
- *
- * @param {Object[]} stations - Array of station objects with id and prices
- * @param {string[]} selectedFuelTypes - Fuel types to display as pie slices
- * @param {Map} fuelLevelsMap - Map of fuel type -> Map of station id -> price level ('low'|'medium'|'high')
- * @returns {L.DivIcon} Leaflet divIcon for the cluster marker
- */
 function getClusterIcon(stations, selectedFuelTypes, fuelLevelsMap) {
+  const count = (stations && stations.length > 0) ? String(stations.length) : '0';
   const n = selectedFuelTypes ? selectedFuelTypes.length : 0;
 
   if (n === 0) {
-    const count = stations && stations.length > 0 ? String(stations.length) : '0';
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#888"/></svg>';
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" style="display:block;"><rect x="4" y="4" width="24" height="24" rx="4" ry="4" fill="#888"/></svg>';
     return L.divIcon({
       className: 'cluster-marker',
       iconSize: [32, 32],
@@ -34,16 +19,16 @@ function getClusterIcon(stations, selectedFuelTypes, fuelLevelsMap) {
     });
   }
 
-  const size = 28;
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = 13;
-  const strokeW = 2;
-  const innerR = r - strokeW / 2;
-  const sliceDeg = 360 / n;
+  const size = 32;
+  const cx = 16;
+  const cy = 16;
   const PI = Math.PI;
 
-  const svgParts = ['<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">'];
+  const svgParts = [
+    '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="display:block;">',
+    '<defs><clipPath id="c-clip"><rect x="4" y="4" width="24" height="24" rx="4" ry="4"/></clipPath></defs>',
+    '<g clip-path="url(#c-clip)">'
+  ];
 
   for (let i = 0; i < n; i++) {
     const fuelType = selectedFuelTypes[i];
@@ -70,21 +55,25 @@ function getClusterIcon(stations, selectedFuelTypes, fuelLevelsMap) {
       }
     }
 
-    const startAngle = (i * sliceDeg - 90) * PI / 180;
-    const endAngle = ((i + 1) * sliceDeg - 90) * PI / 180;
+    if (n === 1) {
+      svgParts.push('<rect x="4" y="4" width="24" height="24" rx="4" ry="4" fill="' + color + '"/>');
+    } else {
+      const sliceDeg = 360 / n;
+      const startAngle = (i * sliceDeg - 90) * PI / 180;
+      const endAngle = ((i + 1) * sliceDeg - 90) * PI / 180;
 
-    const ex1 = cx + innerR * Math.cos(startAngle);
-    const ey1 = cy + innerR * Math.sin(startAngle);
-    const ex2 = cx + innerR * Math.cos(endAngle);
-    const ey2 = cy + innerR * Math.sin(endAngle);
-    const largeArc = sliceDeg > 180 ? 1 : 0;
+      const x1 = cx + 16 * Math.cos(startAngle);
+      const y1 = cy + 16 * Math.sin(startAngle);
+      const x2 = cx + 16 * Math.cos(endAngle);
+      const y2 = cy + 16 * Math.sin(endAngle);
+      const largeArc = sliceDeg > 180 ? 1 : 0;
 
-    svgParts.push('<path d="M ' + cx + ' ' + cy + ' L ' + ex1.toFixed(2) + ' ' + ey1.toFixed(2) + ' A ' + innerR + ' ' + innerR + ' 0 ' + largeArc + ' 1 ' + ex2.toFixed(2) + ' ' + ey2.toFixed(2) + ' Z" fill="' + color + '" stroke="#fff" stroke-width="' + strokeW + '" stroke-linejoin="round"/>');
+      svgParts.push('<path d="M ' + cx + ' ' + cy + ' L ' + x1.toFixed(2) + ' ' + y1.toFixed(2) + ' A 16 16 0 ' + largeArc + ' 1 ' + x2.toFixed(2) + ' ' + y2.toFixed(2) + ' Z" fill="' + color + '" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>');
+    }
   }
 
-  svgParts.push('</svg>');
+  svgParts.push('</g></svg>');
   const svg = svgParts.join('');
-  const count = String(stations.length);
 
   return L.divIcon({
     className: 'cluster-marker',
