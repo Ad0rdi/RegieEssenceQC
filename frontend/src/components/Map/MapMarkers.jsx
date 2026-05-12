@@ -96,25 +96,29 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
   const dataKey = visibleStations?.map(s => `${s.id}-${s.lat}-${s.lng}`).sort().join('|') || '';
   const fuelKey = selectedFuelTypes?.sort().join('|') || '';
 
-  useEffect(() => {
-    const fuelLevelsMap = calculateAllPriceLevels(stations, selectedFuelTypes);
-   if (!clusterGroupRef.current || !map.hasLayer(clusterGroupRef.current)) {
- const newClusterGroup = L.markerClusterGroup({
-          maxClusterRadius: 50,
-          spiderfyOnMaxZoom: true,
-          showCoverageOnHover: false,
-          zoomToBoundsOnClick: false,
-          iconCreateFunction: (cluster) => {
-            const childMarkers = cluster.getAllChildMarkers();
-            const clusterStations = childMarkers
-              .map(m => m._stationData)
-              .filter(s => s != null);
-            return getClusterIcon(clusterStations, selectedFuelTypes, fuelLevelsMap);
-          },
-        });
-      clusterGroupRef.current = newClusterGroup;
-      map.addLayer(newClusterGroup);
+ useEffect(() => {
+     const fuelLevelsMap = calculateAllPriceLevels(stations, selectedFuelTypes);
+
+    // Always recreate cluster group when fuel types change to pick up new levels
+    if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
+      map.removeLayer(clusterGroupRef.current);
     }
+
+    const newClusterGroup = L.markerClusterGroup({
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: false,
+      iconCreateFunction: (cluster) => {
+        const childMarkers = cluster.getAllChildMarkers();
+        const clusterStations = childMarkers
+          .map(m => m._stationData)
+          .filter(s => s != null);
+        return getClusterIcon(clusterStations, selectedFuelTypes, fuelLevelsMap);
+      },
+    });
+    clusterGroupRef.current = newClusterGroup;
+    map.addLayer(newClusterGroup);
 
    // Bind cluster click handler using Leaflet's clusterclick event on the cluster group
     const group = clusterGroupRef.current;
