@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { PRICING_COLORS } from './mapIcons';
+import { PRICING_COLORS, interpolateColor } from './mapIcons';
 
 function buildClusterHTML(count, svg) {
   return '<div class="cluster-marker-inner">' + svg + '<div class="cluster-badge">' + count + '</div></div>';
@@ -31,47 +31,7 @@ function getDominantColor(stations, selectedFuelTypes, fuelLevelsMap) {
   return bestColor;
 }
 
-function calculateLocalPriceLevels(stations, fuelType) {
-  const priceMap = new Map();
-  const validPrices = stations
-    .map((station) => ({
-      id: station.id,
-      price: station.prices ? station.prices[fuelType] : null,
-    }))
-    .filter((entry) => entry.price != null);
-
-  if (validPrices.length === 0) return priceMap;
-
-  if (validPrices.length === 1) {
-    priceMap.set(validPrices[0].id, 'low');
-    return priceMap;
-  }
-
-  const sorted = [...validPrices].sort((a, b) => a.price - b.price);
-
-  if (sorted.length === 2) {
-    priceMap.set(sorted[0].id, 'low');
-    priceMap.set(sorted[1].id, 'high');
-    return priceMap;
-  }
-
-  const n = sorted.length;
-  const third = n / 3;
-
-  for (let i = 0; i < n; i++) {
-    if (i < Math.ceil(third)) {
-      priceMap.set(sorted[i].id, 'low');
-    } else if (i < Math.ceil(third * 2)) {
-      priceMap.set(sorted[i].id, 'medium');
-    } else {
-      priceMap.set(sorted[i].id, 'high');
-    }
-  }
-
-  return priceMap;
-}
-
-function getClusterIcon(stations, selectedFuelTypes, fuelLevelsMap) {
+function getClusterIcon(stations, selectedFuelTypes, fuelLevelsMap, globalPriceRange) {
   const count = (stations && stations.length > 0) ? String(stations.length) : '0';
   const n = selectedFuelTypes ? selectedFuelTypes.length : 0;
 
@@ -97,34 +57,23 @@ function getClusterIcon(stations, selectedFuelTypes, fuelLevelsMap) {
 
     for (let i = 0; i < n; i++) {
       const fuelType = selectedFuelTypes[i];
-      // Compute price levels LOCAL to this cluster so the cheapest station in the cluster is always "low"
-      const localLevels = calculateLocalPriceLevels(stations, fuelType);
 
-      let bestStation = null;
-      let bestPrice = Infinity;
-      let bestLevelOrder = 3;
-
+      // Build local levels among stations in this cluster for picking cheapest
+      const clusterPrices = [];
       for (let j = 0; j < stations.length; j++) {
         const station = stations[j];
         if (!station || !station.prices) continue;
         const price = station.prices[fuelType];
-        if (price == null) continue;
-        const level = localLevels.get(station.id);
-        const levelOrder = level ? (LEVEL_ORDER[level] || 3) : 3;
-
-        // Pick cheapest price; on tie, pick station with best (lowest) level
-        if (price < bestPrice || (price === bestPrice && levelOrder < bestLevelOrder)) {
-          bestPrice = price;
-          bestLevelOrder = levelOrder;
-          bestStation = station;
-        }
+        if (price != null) clusterPrices.push({ station, price });
       }
+      clusterPrices.sort((a, b) => a.price - b.price);
 
+      // Color based on cheapest price in cluster mapped to global gradient
       let color = '#888';
-      if (bestStation) {
-        const level = localLevels.get(bestStation.id);
-        if (level && PRICING_COLORS[level]) {
-          color = PRICING_COLORS[level];
+      if (clusterPrices.length > 0 && globalPriceRange) {
+        const range = globalPriceRange[fuelType];
+        if (range) {
+          color = interpolateColor(range.min, range.max, clusterPrices[0].price);
         }
       }
 

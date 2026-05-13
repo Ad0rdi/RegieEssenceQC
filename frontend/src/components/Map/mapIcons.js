@@ -35,7 +35,7 @@ function getPriceLevelIcon(level) {
   });
 }
 
-function getFuelPieIcon(selectedFuelTypes, levelsMap, stationId) {
+function getFuelPieIcon(selectedFuelTypes, stationPrices, globalPriceRange) {
   if (!selectedFuelTypes || selectedFuelTypes.length === 0) {
     return L.divIcon({
       className: 'price-marker',
@@ -55,9 +55,14 @@ function getFuelPieIcon(selectedFuelTypes, levelsMap, stationId) {
 
   for (let i = 0; i < n; i++) {
     const fuelType = selectedFuelTypes[i];
-    const stationLevels = levelsMap.get(fuelType);
-    const level = stationLevels ? stationLevels.get(stationId) : null;
-    const color = level ? PRICING_COLORS[level] : '#888';
+    const price = stationPrices && stationPrices[fuelType] != null ? stationPrices[fuelType] : null;
+    let color = '#888';
+    if (price != null && globalPriceRange) {
+      const range = globalPriceRange[fuelType];
+      if (range) {
+        color = interpolateColor(range.min, range.max, price);
+      }
+    }
 
     if (n === 1) {
       svgParts.push('<circle cx="' + cx + '" cy="' + cy + '" r="14" fill="' + color + '"/>');
@@ -128,7 +133,25 @@ function calculatePriceLevels(stations, fuelType) {
   return priceMap;
 }
 
-export { selectedIcon, PRICING_COLORS, getStationPrice, getPriceLevelIcon, calculatePriceLevels, getFuelPieIcon };
+function interpolateColor(minPrice, maxPrice, price) {
+  if (maxPrice == null || minPrice == null || maxPrice === minPrice) return '#16a34a';
+  const ratio = (price - minPrice) / (maxPrice - minPrice);
+  let r, g, b;
+  if (ratio <= 0.5) {
+    const t = ratio * 2;
+    r = Math.round(22 + 230 * t);
+    g = Math.round(163 + 41 * t);
+    b = Math.round(74 - 53 * t);
+  } else {
+    const t = (ratio - 0.5) * 2;
+    r = Math.round(252 - 32 * t);
+    g = Math.round(204 - 166 * t);
+    b = Math.round(21 + 17 * t);
+  }
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+export { selectedIcon, PRICING_COLORS, getStationPrice, getPriceLevelIcon, calculatePriceLevels, getFuelPieIcon, interpolateColor };
 
 export function calculateAllPriceLevels(stations, selectedFuelTypes) {
   const fuelLevelsMap = new Map();

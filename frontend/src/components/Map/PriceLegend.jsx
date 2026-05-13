@@ -83,10 +83,17 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
       })}
 
       <div style={{ height: '1px', background: c.separator, margin: '10px 0' }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: c.text }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: '0', background: PRICE_LEVEL_COLORS.low }} />Bas</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: '0', background: PRICE_LEVEL_COLORS.medium }} />Moyen</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: '0', background: PRICE_LEVEL_COLORS.high }} />Haut</span>
+      <div style={{ fontSize: '11px', color: c.text }}>
+        <div style={{
+          height: '10px',
+          borderRadius: '5px',
+          background: 'linear-gradient(to right, #16a34a 0%, #facc15 50%, #dc2626 100%)',
+          marginBottom: '4px'
+        }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
+          <span>Prix le plus bas</span>
+          <span>Prix le plus élevé</span>
+        </div>
       </div>
     </div>
   );
