@@ -135,18 +135,27 @@ function calculatePriceLevels(stations, fuelType) {
 
 function interpolateColor(minPrice, maxPrice, price) {
   if (maxPrice == null || minPrice == null || maxPrice === minPrice) return '#16a34a';
-  const ratio = (price - minPrice) / (maxPrice - minPrice);
+
+  const logMin = Math.log(minPrice);
+  const logMax = Math.log(maxPrice);
+  const ratio = (Math.log(price) - logMin) / (logMax - logMin);
+
   let r, g, b;
-  if (ratio <= 0.5) {
-    const t = ratio * 2;
+  if (ratio < 0.3) {
+    const t = ratio / 0.3;
     r = Math.round(22 + 230 * t);
     g = Math.round(163 + 41 * t);
     b = Math.round(74 - 53 * t);
-  } else {
-    const t = (ratio - 0.5) * 2;
-    r = Math.round(252 - 32 * t);
-    g = Math.round(204 - 166 * t);
+  } else if (ratio < 0.7) {
+    const t = (ratio - 0.3) / 0.4;
+    r = Math.round(252 - 1 * t);
+    g = Math.round(204 - 58 * t);
     b = Math.round(21 + 17 * t);
+  } else {
+    const t = (ratio - 0.7) / 0.3;
+    r = Math.round(251 - 31 * t);
+    g = Math.round(146 - 108 * t);
+    b = Math.round(38 + 0 * t);
   }
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }

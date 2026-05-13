@@ -87,7 +87,7 @@ function PriceLegend({ stations = [], selectedFuelTypes = [] }) {
         <div style={{
           height: '10px',
           borderRadius: '5px',
-          background: 'linear-gradient(to right, #16a34a 0%, #facc15 50%, #dc2626 100%)',
+          background: 'linear-gradient(to right, #16a34a 0%, #facc15 30%, #fb923c 70%, #dc2626 100%)',
           marginBottom: '4px'
         }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
