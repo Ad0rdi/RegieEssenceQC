@@ -140,23 +140,29 @@ function interpolateColor(minPrice, maxPrice, price) {
   const logMax = Math.log(maxPrice);
   const ratio = (Math.log(price) - logMin) / (logMax - logMin);
 
-  let r, g, b;
-  if (ratio < 0.3) {
-    const t = ratio / 0.3;
-    r = Math.round(22 + 230 * t);
-    g = Math.round(163 + 41 * t);
-    b = Math.round(74 - 53 * t);
-  } else if (ratio < 0.7) {
-    const t = (ratio - 0.3) / 0.4;
-    r = Math.round(252 - 1 * t);
-    g = Math.round(204 - 58 * t);
-    b = Math.round(21 + 17 * t);
-  } else {
-    const t = (ratio - 0.7) / 0.3;
-    r = Math.round(251 - 31 * t);
-    g = Math.round(146 - 108 * t);
-    b = Math.round(38 + 0 * t);
+  const stops = [
+    { pos: 0, r: 22, g: 163, b: 74 },   // Green
+    { pos: 0.25, r: 234, g: 179, b: 8 }, // Yellow
+    { pos: 0.5, r: 249, g: 115, b: 22 }, // Orange
+    { pos: 0.75, r: 239, g: 68, b: 68 }, // Red
+    { pos: 1, r: 220, g: 38, b: 38 },    // Dark Red
+  ];
+
+  let lower = stops[0], upper = stops[stops.length - 1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (ratio >= stops[i].pos && ratio <= stops[i + 1].pos) {
+      lower = stops[i];
+      upper = stops[i + 1];
+      break;
+    }
   }
+
+  const range = upper.pos - lower.pos;
+  const t = range > 0 ? (ratio - lower.pos) / range : 0;
+  const r = Math.round(lower.r + (upper.r - lower.r) * t);
+  const g = Math.round(lower.g + (upper.g - lower.g) * t);
+  const b = Math.round(lower.b + (upper.b - lower.b) * t);
+
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 

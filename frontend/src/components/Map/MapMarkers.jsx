@@ -208,6 +208,17 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
     const clusterGroup = clusterGroupRef.current;
     if (!clusterGroup) return;
 
+    if (!selectedFuelTypes || selectedFuelTypes.length === 0) {
+      const existingIds = markersByStationIdRef.current;
+      existingIds.forEach((marker) => {
+        if (marker && clusterGroup.hasLayer(marker)) {
+          clusterGroup.removeLayer(marker);
+        }
+      });
+      existingIds.clear();
+      return;
+    }
+
     const currentIds = new Set(visibleStations?.map(s => s.id) || []);
     const existingIds = markersByStationIdRef.current;
 
