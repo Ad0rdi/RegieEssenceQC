@@ -2,7 +2,7 @@ import { useMap } from 'react-leaflet';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet.markercluster';
-import { calculateAllPriceLevels, getFuelPieIcon } from './mapIcons';
+import { getFuelPieIcon } from './mapIcons';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import { getClusterIcon } from './clusterIcons';
 import { pendingMarkerClickState } from './mapInteractionState';
@@ -60,21 +60,45 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
     return () => map.off('moveend', onClusterFlyMoveEnd);
   }, [map]);
 
-  // Track viewport bounds on map moveend
+  // Track viewport bounds on map moveend (RAF-throttled to reduce React renders during drag)
+  const lastBoundsRef = useRef(null);
+  const rafIdRef = useRef(null);
   useEffect(() => {
     const updateBounds = () => {
       const bounds = map.getBounds();
-      setViewportBounds([
+      const newBounds = [
         bounds.getSouthWest().lat,
         bounds.getSouthWest().lng,
         bounds.getNorthEast().lat,
         bounds.getNorthEast().lng,
-      ]);
+      ];
+      if (lastBoundsRef.current &&
+          newBounds[0] === lastBoundsRef.current[0] &&
+          newBounds[1] === lastBoundsRef.current[1] &&
+          newBounds[2] === lastBoundsRef.current[2] &&
+          newBounds[3] === lastBoundsRef.current[3]) {
+        return;
+      }
+      lastBoundsRef.current = newBounds;
+      const prevId = rafIdRef.current;
+      if (prevId !== null) {
+        cancelAnimationFrame(prevId);
+      }
+      rafIdRef.current = requestAnimationFrame(() => {
+        if (lastBoundsRef.current) {
+          setViewportBounds(lastBoundsRef.current);
+        }
+        rafIdRef.current = null;
+      });
     };
     map.on('moveend', updateBounds);
     updateBounds();
     return () => {
       map.off('moveend', updateBounds);
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
     };
   }, [map]);
 
@@ -95,44 +119,82 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
  const dataKey = stations?.map(s => `${s.id}-${s.lat}-${s.lng}`).sort().join('|') || '';
   const fuelKey = selectedFuelTypes?.sort().join('|') || '';
 
-  const markersByStationIdRef = useRef(new Map());
+ const markersByStationIdRef = useRef(new Map());
 
- // Effect 1: create cluster group (only when data/fuel types change, NOT on zoom/viewport)
+  const stationBestPrices = useMemo(() => {
+    const map = new Map();
+    stations.forEach(s => {
+      const prices = {};
+      for (const ft of ['regular', 'super', 'diesel']) {
+        const price = s.prices ? s.prices[ft] : null;
+        if (price != null) {
+          prices[ft] = price;
+        }
+      }
+      map.set(s.id, prices);
+    });
+    return map;
+  }, [stations]);
+
+  const globalPriceRange = useMemo(() => {
+    const range = {};
+    ['regular', 'super', 'diesel'].forEach(ft => {
+      let min = Infinity, max = -Infinity;
+      stations.forEach(s => {
+        const prices = stationBestPrices.get(s.id);
+        if (prices && prices[ft] != null) {
+          min = Math.min(min, prices[ft]);
+          max = Math.max(max, prices[ft]);
+        }
+      });
+      if (min !== Infinity && max !== -Infinity) {
+        range[ft] = { min, max };
+      }
+    });
+    return range;
+  }, [stations, stationBestPrices, selectedFuelTypes]);
+
+  // Effect 1: create cluster group (only when data/fuel types change, NOT on zoom/viewport)
   useEffect(() => {
-     const fuelLevelsMap = calculateAllPriceLevels(stations, selectedFuelTypes);
+    if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
+      map.removeLayer(clusterGroupRef.current);
+    }
 
-     const globalPriceRange = {};
-     ['regular', 'super', 'diesel'].forEach(ft => {
-       let min = Infinity, max = -Infinity;
-       stations.forEach(s => {
-         const price = s.prices ? s.prices[ft] : null;
-         if (price != null) {
-           min = Math.min(min, price);
-           max = Math.max(max, price);
-         }
-       });
-       if (min !== Infinity && max !== -Infinity) {
-         globalPriceRange[ft] = { min, max };
-       }
-     });
+    const iconCache = new Map();
 
-     if (clusterGroupRef.current && map.hasLayer(clusterGroupRef.current)) {
-       map.removeLayer(clusterGroupRef.current);
-     }
+    const newClusterGroup = L.markerClusterGroup({
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: false,
+      iconCreateFunction: (cluster) => {
+        const childMarkers = cluster.getAllChildMarkers();
+        const clusterStations = childMarkers
+          .map(m => m._stationData)
+          .filter(s => s != null);
+        const count = clusterStations.length;
 
-     const newClusterGroup = L.markerClusterGroup({
-       maxClusterRadius: 50,
-       spiderfyOnMaxZoom: true,
-       showCoverageOnHover: false,
-       zoomToBoundsOnClick: false,
-       iconCreateFunction: (cluster) => {
-         const childMarkers = cluster.getAllChildMarkers();
-         const clusterStations = childMarkers
-           .map(m => m._stationData)
-           .filter(s => s != null);
-         return getClusterIcon(clusterStations, selectedFuelTypes, fuelLevelsMap, globalPriceRange);
-       },
-     });
+        const cacheKey = `${count}-${clusterStations.map(s => s.id).sort().join(',')}`;
+        const cached = iconCache.get(cacheKey);
+        if (cached) return cached;
+
+        const clusterMinPrices = {};
+        for (const ft of selectedFuelTypes) {
+          let min = Infinity;
+          for (const m of childMarkers) {
+            const prices = m._stationPrices;
+            if (prices && prices[ft] != null && prices[ft] < min) {
+              min = prices[ft];
+            }
+          }
+          if (min !== Infinity) clusterMinPrices[ft] = min;
+        }
+
+        const icon = getClusterIcon(clusterStations, selectedFuelTypes, globalPriceRange, clusterMinPrices);
+        iconCache.set(cacheKey, icon);
+        return icon;
+      },
+    });
     clusterGroupRef.current = newClusterGroup;
     map.addLayer(newClusterGroup);
 
@@ -236,22 +298,9 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
     });
 
     // Add new markers that entered viewport
-    const globalPriceRange = {};
-    ['regular', 'super', 'diesel'].forEach(ft => {
-      let min = Infinity, max = -Infinity;
-      stations.forEach(s => {
-        const price = s.prices ? s.prices[ft] : null;
-        if (price != null) {
-          min = Math.min(min, price);
-          max = Math.max(max, price);
-        }
-      });
-      if (min !== Infinity && max !== -Infinity) {
-        globalPriceRange[ft] = { min, max };
-      }
-    });
     visibleStations?.forEach((station) => {
       if (currentIds.has(station.id) && !existingIds.has(String(station.id))) {
+        const prices = stationBestPrices.get(station.id) || {};
         const markerOptions = { icon: getFuelPieIcon(selectedFuelTypes, station.prices, globalPriceRange) };
         const popupContent = formatPopupHTML(station, selectedFuelTypes);
         const marker = L.marker(
@@ -259,6 +308,7 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
            markerOptions
          );
         marker._stationData = station;
+        marker._stationPrices = prices;
         marker._popupContent = popupContent;
         marker.on('click', (e) => {
           L.DomEvent.stopPropagation(e);
@@ -309,10 +359,12 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
       if (!selectedInCluster) {
         const selected = stations.find(s => s.id === selectedStationId);
         if (selected) {
+          const prices = stationBestPrices.get(selected.id) || {};
           const markerOptions = { icon: getFuelPieIcon(selectedFuelTypes, selected.prices, globalPriceRange) };
           const popupContent = formatPopupHTML(selected, selectedFuelTypes);
           const marker = L.marker([selected.lat, selected.lng], markerOptions);
           marker._stationData = selected;
+          marker._stationPrices = prices;
           marker._popupContent = popupContent;
           clusterGroup.addLayer(marker);
           existingIds.set(String(selected.id), marker);

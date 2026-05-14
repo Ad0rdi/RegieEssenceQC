@@ -1126,10 +1126,7 @@ body[data-theme="dark"] .map-confirm-popup-container .leaflet-popup-content-wrap
   border: 4px solid #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 2px rgba(0,0,0,0.15);
   position: relative;
-}
-
-.cluster-marker-inner svg {
-  display: block;
+  overflow: hidden;
 }
 
 .cluster-badge {
