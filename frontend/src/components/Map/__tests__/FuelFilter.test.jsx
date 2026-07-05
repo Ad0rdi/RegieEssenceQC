@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { render, fireEvent } from '@testing-library/react';
 import FuelFilter from '../FuelFilter';
 import { FilterProvider } from '../../../context/FilterContext';
 

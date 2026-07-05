@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 function CachedDataBanner({ fromCache }) {
   const [visible, setVisible] = useState(false);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (fromCache) {
       setVisible(true);

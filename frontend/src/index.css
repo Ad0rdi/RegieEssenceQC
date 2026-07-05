@@ -448,7 +448,7 @@ body[data-theme="dark"] .error-message {
 }
 
 .precise-mode-toggle:hover {
-  background: var(--hover-bg, rgba(0, 0, 0, 0.05));
+  background: rgba(0, 0, 0, 0.05);
 }
 
 /* Precise mode search button */
@@ -946,7 +946,7 @@ body[data-theme="dark"] .leaflet-custom-zoom-btn {
 }
 
 body[data-theme="dark"] .leaflet-custom-zoom {
-  border-color: var(--border-dark);
+  border-color: #374151;
 }
 
 .leaflet-gps-btn-wrapper {

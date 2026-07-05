@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 
 const mockFeatures = {
   all: [
@@ -153,7 +153,7 @@ describe('useStations', () => {
   });
 
   it('should return fromCache: true when using cached data', async () => {
-    const { fetchStations, useCachedData } = await import('../../services/dataService');
+    const { useCachedData } = await import('../../services/dataService');
     const cachedStations = mockFeatures.all;
     useCachedData.mockResolvedValue({
       stations: cachedStations,

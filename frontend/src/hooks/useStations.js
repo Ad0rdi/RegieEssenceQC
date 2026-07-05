@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { fetchStations, useCachedData, transformCachedStations } from '../services/dataService';
+import { fetchStations, useCachedData as getCachedData, transformCachedStations } from '../services/dataService';
 import { setCache } from '../utils/storage';
+
 
 function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
   const [stations, setStations] = useState([]);
@@ -25,7 +26,7 @@ function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
 
     const loadStations = async () => {
       try {
-        const cacheResult = await useCachedData(selectedFuelTypes);
+        const cacheResult = await getCachedData(selectedFuelTypes);
 
         if (cacheResult && isMountedRef.current) {
           setStations(cacheResult.stations);
@@ -40,6 +41,7 @@ function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
 
           if (!controller.signal.aborted) {
             if (!data || !Array.isArray(data.features)) {
+              // eslint-disable-next-line no-throw-local-return
               throw new Error('Invalid GeoJSON format: missing features array');
             }
 
@@ -77,7 +79,7 @@ function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
       controller.abort();
       isMountedRef.current = false;
     };
-  }, [JSON.stringify(selectedFuelTypes)]);
+  }, [selectedFuelTypes]);
 
   return { stations, loading, error, generatedAt, fromCache };
 }

@@ -10,7 +10,6 @@ vi.mock('leaflet', () => ({
 vi.mock('leaflet/dist/images/marker-icon.png', () => ({ default: 'marker-icon.png' }));
 vi.mock('leaflet/dist/images/marker-shadow.png', () => ({ default: 'marker-shadow.png' }));
 
-const L = await import('leaflet');
 const { PRICING_COLORS, getStationPrice, getPriceLevelIcon, calculatePriceLevels } = await import('../mapIcons');
 
 describe('PRICING_COLORS', () => {

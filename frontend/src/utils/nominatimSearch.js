@@ -21,15 +21,15 @@ function normalizeCityName(name) {
     .replace(/[íìîï]/g, 'i')
     .replace(/[óòôõö]/g, 'o')
     .replace(/[úùûü]/g, 'u')
-    .replace(/[ñ]/g, 'n')
-    .replace(/[ç]/g, 'c')
+    .replace(/ñ/g, 'n')
+    .replace(/ç/g, 'c')
     .replace(/[ÁÀÂÃÄÅ]/g, 'A')
     .replace(/[ÉÈÊË]/g, 'E')
     .replace(/[ÍÌÎÏ]/g, 'I')
     .replace(/[ÓÒÔÕÖ]/g, 'O')
     .replace(/[ÚÙÛÜ]/g, 'U')
-    .replace(/[Ñ]/g, 'N')
-    .replace(/[Ç]/g, 'C')
+    .replace(/Ñ/g, 'N')
+    .replace(/Ç/g, 'C')
     .replace(/['']/g, '')
     .replace(/[-\s]+/g, ' ')
     .trim();
@@ -113,7 +113,7 @@ async function parseDisplayName(displayName) {
 }
 
 function getCacheKey(query) {
-  const normalized = query.toLowerCase().trim().replace(/[\p{P}]/gu, '').replace(/\s+/g, ' ');
+  const normalized = query.toLowerCase().trim().replace(/\p{P}/gu, '').replace(/\s+/g, ' ');
   return `nominatim_${normalized}`;
 }
 
@@ -145,16 +145,7 @@ function setCachedResults(query, data) {
   }
 }
 
-function clearCache(query) {
-  try {
-    const key = getCacheKey(query);
-    localStorage.removeItem(key);
-  } catch {
-    // ignore
-  }
-}
-
-export { getCacheKey, getCachedResults, setCachedResults, clearCache, parseDisplayName };
+export { getCacheKey, getCachedResults, setCachedResults, parseDisplayName };
 
 export function useNominatimSearch() {
   const [isSearching, setIsSearching] = useState(false);
@@ -213,6 +204,7 @@ export function useNominatimSearch() {
           setError('Trop de requêtes, réessayez plus tard.');
           return [];
         }
+        // eslint-disable-next-line no-throw-local-return
         throw new Error(`HTTP ${response.status}`);
       }
 
@@ -278,7 +270,7 @@ export function useNominatimSearch() {
   }, []);
 
   const clearAllCache = useCallback(() => {
-    const keysToRemove = Object.keys(localStorage).filter(key => key.startsWith('nominatim_'));
+    const keysToRemove = localStorage.keys().filter(key => key.startsWith('nominatim_'));
     for (const key of keysToRemove) {
       localStorage.removeItem(key);
     }
@@ -287,4 +279,4 @@ export function useNominatimSearch() {
   return { search, isSearching, error, clearAllCache };
 }
 
-export default useNominatimSearch;
+

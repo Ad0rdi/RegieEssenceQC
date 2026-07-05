@@ -1,6 +1,5 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import App from './App';
-import * as reactLeaflet from 'react-leaflet';
 
 // Mocking fetch and other globals
 global.fetch = vi.fn(() => 
@@ -9,8 +8,6 @@ global.fetch = vi.fn(() =>
     json: () => Promise.resolve({ type: 'FeatureCollection', features: [] }),
   })
 );
-
-const GEOJSON_URL = 'https://example.com/stations.json';
 
 // Mock Geolocation API
 global.navigator.geolocation = {
@@ -23,9 +20,9 @@ global.navigator.geolocation = {
 
 // Mock react-leaflet
 vi.mock('react-leaflet', () => ({
-  MapContainer: ({ children, center, zoom, style, zoomControl }) => <div data-testid="map-container" style={{height: '100%', width: '100%'}}>{children}</div>,
+  MapContainer: ({ children }) => <div data-testid="map-container" style={{height: '100%', width: '100%'}}>{children}</div>,
   TileLayer: () => <div data-testid="tile-layer" />,
-  Marker: ({ position, children, eventHandlers }) => (
+  Marker: ({ position, children }) => (
       <div data-testid="marker" data-position={position.join(',')}>
             {children}
           </div>
@@ -51,7 +48,7 @@ vi.mock('./components/Map/PriceLegend', () => ({
   default: () => <div data-testid="price-legend" />,
 }));
 vi.mock('./components/Map/CitySearchInput', () => ({
-  default: ({ onCitySelect }) => <div data-testid="city-search" />,
+  default: () => <div data-testid="city-search" />,
 }));
 vi.mock('./components/Map/MapMarkers', () => ({
   default: () => <div data-testid="map-markers" />,
@@ -66,24 +63,7 @@ vi.mock('./components/Map/ZoomPositioner', () => ({
   default: () => null,
 }));
 
-// Mocking context
-vi.mock('./context/FilterContext', () => ({
-  FilterProvider: ({ children }) => <div>{children}</div>,
-  useFilters: () => ({
-    selectedFuelTypes: ['gasoline', 'diesel'],
-    setDrawerOpen: vi.fn(),
-    radiusFilter: null,
-    setRadiusFilter: vi.fn(),
-    priceFilter: { min: null, max: null },
-    setPriceFilter: vi.fn(),
-    centerLocation: null,
-    setCenterLocation: vi.fn(),
-    datasaver: false,
-    toggleDatasaver: vi.fn(),
-    setDatasaver: vi.fn(),
-    resetAllPrefs: vi.fn(),
-  }),
-}));
+// Note: FilterContext uses real implementation with mocked localStorage from vitest.setup.js
 
 vi.mock('./context/ThemeContext', () => ({
   ThemeProvider: ({ children }) => <div>{children}</div>,
@@ -128,7 +108,7 @@ describe('App Component', () => {
     
     const maxInput = screen.getByLabelText(/Prix max/i);
     
-    fireEvent.change(maxInput, { target: { value: '2.0' } });
+    fireEvent.input(maxInput, { target: { value: '2.0' } });
     
     await waitFor(() => {
         expect(screen.getByTestId('station-drawer')).toHaveAttribute('data-count', '2');

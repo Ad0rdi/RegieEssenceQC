@@ -142,7 +142,6 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
       }
       map.set(s.id, prices);
     });
-    stationBestPricesRef.current = map;
     return map;
   }, [stations]);
 
@@ -259,7 +258,7 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
     const newMarkers = [];
     for (const station of toAdd) {
       const popupContent = formatPopupHTML(station, selectedFuelTypes);
-      const marker = createStationMarker(station, selectedFuelTypes, globalPriceRangeRef.current, stationBestPricesRef.current, popupContent);
+      const marker = createStationMarker(station, selectedFuelTypes, globalPriceRangeRef.current, stationBestPrices, popupContent);
       newMarkers.push(marker);
     }
 
@@ -383,7 +382,7 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
       }
       pendingMarkerClickState.ref.current = null;
     };
-  }, [dataKey, fuelKey, stations, selectedFuelTypes, map]);
+  }, [dataKey, fuelKey, stations, selectedFuelTypes, map, globalPriceRange]);
 
  // Effect 2: sync markers to viewport (deferred via requestIdleCallback)
   useEffect(() => {
@@ -454,7 +453,7 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
       manualMarkerRef.current = null;
       manualLayerGroupRef.current = null;
     };
-  }, [visibleStations, stations, selectedFuelTypes, selectedStationId, viewportBounds, map]);
+  }, [visibleStations, stations, selectedFuelTypes, selectedStationId, viewportBounds, map, syncMarkers]);
 
   return null;
 }

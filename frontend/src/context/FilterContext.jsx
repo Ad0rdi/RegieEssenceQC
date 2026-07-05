@@ -99,4 +99,5 @@ export const FilterProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useFilters = () => useContext(FilterContext);

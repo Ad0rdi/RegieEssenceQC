@@ -1,5 +1,5 @@
 import pako from 'pako';
-import { getCache, isCacheValid, clearCache, setCache, getDatasaverMode } from '../utils/storage';
+import { getCache, isCacheValid, clearCache, getDatasaverMode } from '../utils/storage';
 
 const GEOJSON_URL = 'https://regieessencequebec.ca/stations.geojson.gz';
 const MAX_RETRIES = 3;
@@ -27,13 +27,15 @@ const processData = (uint8Array) => {
 export const fetchStations = async (retries = MAX_RETRIES) => {
   try {
     const response = await fetch(GEOJSON_URL);
-    if (!response.ok) throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+    if (!response.ok) {
+      // eslint-disable-next-line no-throw-local-return
+      throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+    }
 
     const arrayBuffer = await response.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    const parsed = processData(uint8Array);
-    return parsed;
+    return processData(uint8Array);
   } catch (err) {
     if (retries <= 0) {
       throw err;
@@ -69,18 +71,16 @@ export function transformCachedStations(data, selectedFuelTypes = ['regular', 's
         props.Prices.forEach(p => {
           const mappedType = TYPE_MAP[p.GasType];
           if (mappedType && p.Price && typeof p.Price === 'string' && p.IsAvailable) {
-            const priceValue = parseFloat(p.Price.replace('¢', '')) / 100;
-            prices[mappedType] = priceValue;
+            prices[mappedType] = parseFloat(p.Price.replace('¢', '')) / 100;
           }
         });
       } else if (props.prices && typeof props.prices === 'object') {
         for (const [key, value] of Object.entries(props.prices)) {
           const mappedType = TYPE_MAP[key];
           if (mappedType) {
-            const priceValue = typeof value === 'string'
+            prices[mappedType] = typeof value === 'string'
               ? parseFloat(value.replace(/[^\d.]/g, ''))
               : value;
-            prices[mappedType] = priceValue;
           }
         }
       }

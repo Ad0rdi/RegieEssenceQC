@@ -44,29 +44,33 @@ function AppContent() {
   const isMobile = useIsMobile();
   const { selectedFuelTypes, drawerOpen, setDrawerOpen, radiusFilter, setRadiusFilter, priceFilter, setPriceFilter, centerLocation, setCenterLocation, resetAllPrefs } = useFilters();
    const { theme, toggleTheme } = useTheme();
-  const { stations, loading, error, generatedAt, fromCache } = useStations(selectedFuelTypes);
+  const { stations, generatedAt, fromCache } = useStations(selectedFuelTypes);
+
+  const [selectedStationId, setSelectedStationId] = useState(null);
+  const [selectedStationSource, setSelectedStationSource] = useState(null);
+  const [selectedStationClickCount, setSelectedStationClickCount] = useState(0);
+  const [gpsMarkerPosition, setGpsMarkerPosition] = useState(null);
+  const [addressLocation, setAddressLocation] = useState(null);
+  const [manualMarkerLocation, setManualMarkerLocation] = useState(null);
 
   const stableCenterLocation = useMemo(() => {
     if (!centerLocation) return null;
     return centerLocation;
-  }, [centerLocation?.lat, centerLocation?.lng]);
-const [selectedStationId, setSelectedStationId] = useState(null);
-  const [selectedStationSource, setSelectedStationSource] = useState(null);
-  const [selectedStationClickCount, setSelectedStationClickCount] = useState(0);
-    const [gpsMarkerPosition, setGpsMarkerPosition] = useState(null);
-    useEffect(() => {
-      window.__GPS_STATE = { markerPosition: gpsMarkerPosition, centerLocation: stableCenterLocation };
-    }, [gpsMarkerPosition, stableCenterLocation]);
-  
+  }, [centerLocation]);
+
+  useEffect(() => {
+    window.__GPS_STATE = { markerPosition: gpsMarkerPosition, centerLocation: stableCenterLocation };
+  }, [gpsMarkerPosition, stableCenterLocation]);
+
   const setGpsLocation = useCallback((position) => {
     if (position) {
       setCenterLocation(position);
       setManualMarkerLocation(null);
       setAddressLocation(null);
     }
-  }, []);
+  }, [setCenterLocation]);
 
-useEffect(() => {
+  useEffect(() => {
     const handler = (e) => {
       e.preventDefault();
     };
@@ -74,7 +78,7 @@ useEffect(() => {
     return () => {
       document.removeEventListener('contextmenu', handler);
     };
-  }, []);
+  }, [setCenterLocation]);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -89,7 +93,7 @@ useEffect(() => {
                  setGpsMarkerPosition({ lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy });
                }
              },
-             (err) => { /* initial GPS error */ },
+              () => { /* initial GPS error */ },
               { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
             );
 
@@ -112,7 +116,7 @@ useEffect(() => {
                     });
                   }
                 },
-                (err) => { /* watch GPS error */ },
+                () => { /* watch GPS error */ },
                 { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
               );
            };
@@ -123,12 +127,10 @@ useEffect(() => {
          if (watchId !== null) {
            navigator.geolocation.clearWatch(watchId);
          }
-       };
-   }, []);
+        };
+    }, []);
 
-  const [addressLocation, setAddressLocation] = useState(null);
-  const [manualMarkerLocation, setManualMarkerLocation] = useState(null);
-
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const handleLocationSelect = useCallback((location) => {
       setCenterLocation(location);
       if (location.source === 'address') {
@@ -141,7 +143,7 @@ useEffect(() => {
         setManualMarkerLocation(null);
         setAddressLocation(null);
       }
-    }, []);
+      }, [setCenterLocation]);
 
   // --- Filtering Logic ---
   const filteredFeatures = useMemo(() => {
@@ -168,7 +170,7 @@ useEffect(() => {
               type.toLowerCase().includes(selectedType)
             );
           })
-          .map(([type, price]) => price);
+            .map(([, price]) => price);
 
         if (relevantPrices.length > 0) {
           const min = priceFilter.min || 0;
@@ -212,17 +214,14 @@ useEffect(() => {
     setSelectedStationClickCount(prev => prev + 1);
   };
 
- const selectedStation = useMemo(() => 
+  const selectedStation = useMemo(() => 
     filteredFeatures.find(s => s.id === selectedStationId),
     [filteredFeatures, selectedStationId]
   );
 
-  useEffect(() => {
-    if (!filteredFeatures.some(s => s.id === selectedStationId)) {
-      setSelectedStationId(null);
-      setSelectedStationSource(null);
-    }
-  }, [filteredFeatures, selectedStationId]);
+  const isStationStillValid = filteredFeatures.some(s => s.id === selectedStationId);
+  const effectiveStationId = isStationStillValid ? selectedStationId : null;
+  const effectiveStationSource = isStationStillValid ? selectedStationSource : null;
 
   const mapCenter = stableCenterLocation ? [stableCenterLocation.lat, stableCenterLocation.lng] : DEFAULT_CENTER;
 
@@ -306,7 +305,7 @@ useEffect(() => {
       </div>
 
       <div className="map-container">
-        <StationDrawer stations={filteredFeatures} onStationClick={handleDrawerStationClick} selectedStationId={selectedStationId} centerLocation={stableCenterLocation} />
+        <StationDrawer stations={filteredFeatures} onStationClick={handleDrawerStationClick} selectedStationId={effectiveStationId} centerLocation={stableCenterLocation} />
         <MapContainer
           center={mapCenter}
           zoom={stableCenterLocation && stableCenterLocation.source !== 'map' ? GPS_ZOOM : DEFAULT_ZOOM}
@@ -340,7 +339,7 @@ useEffect(() => {
               onStationClick={handleStationClick}
               selectedFuelTypes={selectedFuelTypes}
             />
-          {selectedStation && <MapController key={`${selectedStation.id}-${selectedStationClickCount}`} station={selectedStation} source={selectedStationSource} isMobile={isMobile} />}
+          {selectedStation && <MapController key={`${selectedStation.id}-${selectedStationClickCount}`} station={selectedStation} source={effectiveStationSource} isMobile={isMobile} />}
           {stableCenterLocation && stableCenterLocation.source !== 'map' && <CityZoomController city={stableCenterLocation} />}
           {addressLocation && <AddressMarker location={addressLocation} />}
           {manualMarkerLocation && <ManualLocationMarker location={manualMarkerLocation} />}
