@@ -44,6 +44,8 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
   const onStationClickRef = useRef(onStationClick);
   const clusterClickHandlerRef = useRef(null);
   const [viewportBounds, setViewportBounds] = useState(null);
+  const manualMarkerRef = useRef(null);
+  const manualLayerGroupRef = useRef(null);
 
   // Keep callback refs up to date without triggering effect re-runs
   useEffect(() => {
@@ -116,10 +118,17 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
     });
   }, [stations, viewportBounds]);
 
- const dataKey = stations?.map(s => `${s.id}-${s.lat}-${s.lng}`).sort().join('|') || '';
+  useEffect(() => {
+    visibleStationsRef.current = visibleStations;
+  }, [visibleStations]);
+
+  const dataKey = stations?.map(s => `${s.id}-${s.lat}-${s.lng}`).sort().join('|') || '';
   const fuelKey = selectedFuelTypes?.sort().join('|') || '';
 
- const markersByStationIdRef = useRef(new Map());
+  const markersByStationIdRef = useRef(new Map());
+  const stationBestPricesRef = useRef(new Map());
+  const globalPriceRangeRef = useRef({});
+  const visibleStationsRef = useRef([]);
 
   const stationBestPrices = useMemo(() => {
     const map = new Map();
@@ -133,12 +142,13 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
       }
       map.set(s.id, prices);
     });
+    stationBestPricesRef.current = map;
     return map;
   }, [stations]);
 
   const globalPriceRange = useMemo(() => {
     const range = {};
-    ['regular', 'super', 'diesel'].forEach(ft => {
+    selectedFuelTypes.forEach(ft => {
       let min = Infinity, max = -Infinity;
       stations.forEach(s => {
         const prices = stationBestPrices.get(s.id);
@@ -153,6 +163,116 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
     });
     return range;
   }, [stations, stationBestPrices, selectedFuelTypes]);
+
+  useEffect(() => {
+    globalPriceRangeRef.current = globalPriceRange;
+  }, [globalPriceRange]);
+
+ // Helper: create a single station marker
+  function createStationMarker(station, selectedFuelTypes, globalPriceRange, stationBestPrices, popupContent) {
+    const prices = stationBestPrices.get(station.id) || {};
+    const markerOptions = { icon: getFuelPieIcon(selectedFuelTypes, station.prices, globalPriceRange) };
+    const marker = L.marker(
+      [station.lat, station.lng],
+      markerOptions
+    );
+    marker._stationData = station;
+    marker._stationPrices = prices;
+    marker._popupContent = popupContent;
+    marker.on('click', (e) => {
+      L.DomEvent.stopPropagation(e);
+      if (pendingMarkerClickState.suppressClickRef.current) {
+        pendingMarkerClickState.suppressClickRef.current = false;
+        if (pendingMarkerClickState.timeoutRef.current) {
+          clearTimeout(pendingMarkerClickState.timeoutRef.current);
+          pendingMarkerClickState.timeoutRef.current = null;
+        }
+        pendingMarkerClickState.ref.current = null;
+        return;
+      }
+      if (pendingMarkerClickState.timeoutRef.current && pendingMarkerClickState.ref.current === true) {
+        clearTimeout(pendingMarkerClickState.timeoutRef.current);
+        pendingMarkerClickState.timeoutRef.current = null;
+        pendingMarkerClickState.suppressClickRef.current = true;
+      }
+      if (pendingMarkerClickState.timeoutRef.current) {
+        clearTimeout(pendingMarkerClickState.timeoutRef.current);
+        pendingMarkerClickState.timeoutRef.current = null;
+      }
+      pendingMarkerClickState.ref.current = marker;
+      pendingMarkerClickState.timeoutRef.current = setTimeout(() => {
+        if (pendingMarkerClickState.suppressClickRef.current) {
+          pendingMarkerClickState.suppressClickRef.current = false;
+          pendingMarkerClickState.timeoutRef.current = null;
+          pendingMarkerClickState.ref.current = null;
+          return;
+        }
+        if (pendingMarkerClickState.touchPhaseRef.current === 'ZOOM_DRAG') {
+          pendingMarkerClickState.timeoutRef.current = null;
+          pendingMarkerClickState.ref.current = null;
+          return;
+        }
+        onStationClickRef.current(station);
+        pendingMarkerClickState.timeoutRef.current = null;
+        pendingMarkerClickState.ref.current = null;
+      }, pendingMarkerClickState.ZOOM_DRAG_TIMEOUT);
+    });
+    return marker;
+  }
+
+// Core: sync markers to/from cluster group (called synchronously for initial render,
+// then via requestIdleCallback for subsequent updates)
+  function syncMarkers(clusterGroup) {
+    if (!clusterGroup) return;
+
+    const existingIds = markersByStationIdRef.current;
+    const currentVisibleStations = visibleStationsRef.current;
+    const visibleIds = new Set(currentVisibleStations?.map(s => s.id) || []);
+
+    // Phase 1: Remove markers no longer in viewport
+    const toRemove = [];
+    existingIds.forEach((val, id) => {
+      if (!visibleIds.has(id)) toRemove.push(id);
+    });
+    toRemove.forEach(id => {
+      const marker = existingIds.get(id);
+      if (marker && clusterGroup.hasLayer(marker)) {
+        clusterGroup.removeLayer(marker);
+      }
+      existingIds.delete(id);
+    });
+
+  // Phase 2: Add new markers (center-first, batch via L.layerGroup)
+    let toAdd = currentVisibleStations?.filter(s => !existingIds.has(String(s.id))) || [];
+
+    // Center-first: sort by distance to viewport center so center markers load first
+    if (viewportBounds && viewportBounds.length === 4 && toAdd.length > 1) {
+      const centerLat = (viewportBounds[0] + viewportBounds[2]) / 2;
+      const centerLng = (viewportBounds[1] + viewportBounds[3]) / 2;
+      toAdd.sort((a, b) => {
+        const distA = (a.lat - centerLat) ** 2 + (a.lng - centerLng) ** 2;
+        const distB = (b.lat - centerLat) ** 2 + (b.lng - centerLng) ** 2;
+        return distA - distB;
+      });
+    }
+
+    const newMarkers = [];
+    for (const station of toAdd) {
+      const popupContent = formatPopupHTML(station, selectedFuelTypes);
+      const marker = createStationMarker(station, selectedFuelTypes, globalPriceRangeRef.current, stationBestPricesRef.current, popupContent);
+      newMarkers.push(marker);
+    }
+
+    if (newMarkers.length > 0) {
+      // Add all markers at once via L.layerGroup — triggers _recursivelyAddChildrenToMap
+      // at the end, ensuring all markers render regardless of async timing
+      const layerGroup = L.layerGroup(newMarkers);
+      clusterGroup.addLayer(layerGroup);
+      for (const marker of newMarkers) {
+        existingIds.set(String(marker._stationData.id), marker);
+      }
+    }
+  }
 
   // Effect 1: create cluster group (only when data/fuel types change, NOT on zoom/viewport)
   useEffect(() => {
@@ -199,7 +319,7 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
     map.addLayer(newClusterGroup);
 
    const group = clusterGroupRef.current;
- const clusterClickHandler = (e) => {
+   const clusterClickHandler = (e) => {
       L.DomEvent.preventDefault(e);
       if (pendingMarkerClickState.suppressClickRef.current) {
         pendingMarkerClickState.suppressClickRef.current = false;
@@ -263,125 +383,78 @@ function MapMarkers({ stations, selectedStationId, onStationClick, selectedFuelT
       }
       pendingMarkerClickState.ref.current = null;
     };
-  }, [dataKey, fuelKey, stations, selectedFuelTypes, selectedStationId, map]);
+  }, [dataKey, fuelKey, stations, selectedFuelTypes, map]);
 
-  // Effect 2: sync markers to viewport (on zoom/pan, without recreating cluster group)
+ // Effect 2: sync markers to viewport (deferred via requestIdleCallback)
   useEffect(() => {
     const clusterGroup = clusterGroupRef.current;
     if (!clusterGroup) return;
 
-    if (!selectedFuelTypes || selectedFuelTypes.length === 0) {
-      const existingIds = markersByStationIdRef.current;
-      existingIds.forEach((marker) => {
-        if (marker && clusterGroup.hasLayer(marker)) {
-          clusterGroup.removeLayer(marker);
-        }
-      });
-      existingIds.clear();
-      return;
-    }
-
-    const currentIds = new Set(visibleStations?.map(s => s.id) || []);
-    const existingIds = markersByStationIdRef.current;
-
-    // Remove markers no longer in viewport
-    const toRemove = [];
-    existingIds.forEach((val, id) => {
-      if (!currentIds.has(id)) toRemove.push(id);
-    });
-    toRemove.forEach(id => {
-      const marker = existingIds.get(id);
-      if (marker && clusterGroup.hasLayer(marker)) {
-        clusterGroup.removeLayer(marker);
-      }
-      existingIds.delete(id);
-    });
-
-    // Add new markers that entered viewport
-    visibleStations?.forEach((station) => {
-      if (currentIds.has(station.id) && !existingIds.has(String(station.id))) {
-        const prices = stationBestPrices.get(station.id) || {};
-        const markerOptions = { icon: getFuelPieIcon(selectedFuelTypes, station.prices, globalPriceRange) };
-        const popupContent = formatPopupHTML(station, selectedFuelTypes);
-        const marker = L.marker(
-           [station.lat, station.lng],
-           markerOptions
-         );
-        marker._stationData = station;
-        marker._stationPrices = prices;
-        marker._popupContent = popupContent;
-        marker.on('click', (e) => {
-          L.DomEvent.stopPropagation(e);
-          if (pendingMarkerClickState.suppressClickRef.current) {
-            pendingMarkerClickState.suppressClickRef.current = false;
-            if (pendingMarkerClickState.timeoutRef.current) {
-              clearTimeout(pendingMarkerClickState.timeoutRef.current);
-              pendingMarkerClickState.timeoutRef.current = null;
-            }
-            pendingMarkerClickState.ref.current = null;
-            return;
+    const doSync = () => {
+      if (!selectedFuelTypes || selectedFuelTypes.length === 0) {
+        const existingIds = markersByStationIdRef.current;
+        existingIds.forEach((marker) => {
+          if (marker && clusterGroup.hasLayer(marker)) {
+            clusterGroup.removeLayer(marker);
           }
-          if (pendingMarkerClickState.timeoutRef.current && pendingMarkerClickState.ref.current === true) {
-            clearTimeout(pendingMarkerClickState.timeoutRef.current);
-            pendingMarkerClickState.timeoutRef.current = null;
-            pendingMarkerClickState.suppressClickRef.current = true;
-          }
-          if (pendingMarkerClickState.timeoutRef.current) {
-            clearTimeout(pendingMarkerClickState.timeoutRef.current);
-            pendingMarkerClickState.timeoutRef.current = null;
-          }
-          pendingMarkerClickState.ref.current = marker;
-         pendingMarkerClickState.timeoutRef.current = setTimeout(() => {
-           if (pendingMarkerClickState.suppressClickRef.current) {
-             pendingMarkerClickState.suppressClickRef.current = false;
-             pendingMarkerClickState.timeoutRef.current = null;
-             pendingMarkerClickState.ref.current = null;
-             return;
-           }
-           if (pendingMarkerClickState.touchPhaseRef.current === 'ZOOM_DRAG') {
-             pendingMarkerClickState.timeoutRef.current = null;
-             pendingMarkerClickState.ref.current = null;
-             return;
-           }
-           onStationClickRef.current(station);
-           pendingMarkerClickState.timeoutRef.current = null;
-           pendingMarkerClickState.ref.current = null;
-         }, pendingMarkerClickState.ZOOM_DRAG_TIMEOUT);
-       });
-        clusterGroup.addLayer(marker);
-        existingIds.set(String(station.id), marker);
+        });
+        existingIds.clear();
+        return;
       }
-    });
 
-    // Also add the selected station marker even if outside viewport bounds
-    if (selectedStationId) {
-      const selectedInCluster = visibleStations?.some(s => s.id === selectedStationId);
-      if (!selectedInCluster) {
-        const selected = stations.find(s => s.id === selectedStationId);
-        if (selected) {
-          const prices = stationBestPrices.get(selected.id) || {};
-          const markerOptions = { icon: getFuelPieIcon(selectedFuelTypes, selected.prices, globalPriceRange) };
-          const popupContent = formatPopupHTML(selected, selectedFuelTypes);
-          const marker = L.marker([selected.lat, selected.lng], markerOptions);
-          marker._stationData = selected;
-          marker._stationPrices = prices;
-          marker._popupContent = popupContent;
-          clusterGroup.addLayer(marker);
-          existingIds.set(String(selected.id), marker);
-        }
-      }
-    }
-
-    // Cleanup on unmount
-    return () => {
-      existingIds.forEach((marker) => {
-        if (marker && clusterGroup.hasLayer(marker)) {
-          clusterGroup.removeLayer(marker);
-        }
-      });
-      existingIds.clear();
+      syncMarkers(clusterGroup);
     };
-  }, [visibleStations, stations, selectedFuelTypes, selectedStationId, map]);
+
+    // First sync: run synchronously so initial viewport stations appear immediately
+    // Subsequent syncs (viewport changes): defer so browser can paint first
+    if (markersByStationIdRef.current.size === 0) {
+      doSync();
+    } else {
+      // Defer to next task so browser can paint first
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(doSync, { timeout: 100 });
+      } else {
+        setTimeout(doSync, 0);
+      }
+    }
+
+    // Handle selected station marker separately (outside cluster group)
+    const manualLayerGroup = manualLayerGroupRef.current;
+    const oldManualMarker = manualMarkerRef.current;
+    
+    if (selectedStationId) {
+      const selected = stations.find(s => s.id === selectedStationId);
+      if (selected) {
+        if (!oldManualMarker) {
+          const popupContent = formatPopupHTML(selected, selectedFuelTypes);
+          const marker = createStationMarker(selected, selectedFuelTypes, globalPriceRangeRef.current, stationBestPricesRef.current, popupContent);
+          manualMarkerRef.current = marker;
+          if (!manualLayerGroup) {
+            const layerGroup = L.layerGroup();
+            manualLayerGroupRef.current = layerGroup;
+            map.addLayer(layerGroup);
+          }
+          manualLayerGroupRef.current.addLayer(marker);
+        } else {
+          manualMarkerRef.current.setLatLng([selected.lat, selected.lng]);
+        }
+      }
+    } else if (oldManualMarker) {
+      if (manualLayerGroup && map.hasLayer(manualLayerGroup)) {
+        map.removeLayer(manualLayerGroup);
+      }
+      manualMarkerRef.current = null;
+      manualLayerGroupRef.current = null;
+    }
+
+    return () => {
+      if (manualLayerGroupRef.current && map.hasLayer(manualLayerGroupRef.current)) {
+        map.removeLayer(manualLayerGroupRef.current);
+      }
+      manualMarkerRef.current = null;
+      manualLayerGroupRef.current = null;
+    };
+  }, [visibleStations, stations, selectedFuelTypes, selectedStationId, viewportBounds, map]);
 
   return null;
 }
