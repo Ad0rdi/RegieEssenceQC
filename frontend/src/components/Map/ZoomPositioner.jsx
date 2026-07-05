@@ -8,4 +8,4 @@ function ZoomPositioner() {
   );
 }
 
-export default ZoomPositioner;
+// Note: This component is not currently used in the app (hidden behind JS zoom control logic)

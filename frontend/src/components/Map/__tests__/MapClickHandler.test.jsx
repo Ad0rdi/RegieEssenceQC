@@ -93,7 +93,7 @@ describe('MapClickHandler', () => {
     mockCallback = vi.fn();
   });
 
- async function fireClick(lat, lng, target = {}) {
+  async function fireClick(lat, lng, target = {}) {
     const stopImmediatePropagationSpy = vi.fn();
     await act(async () => {
       handlers.click({
@@ -103,13 +103,6 @@ describe('MapClickHandler', () => {
       });
     });
     return stopImmediatePropagationSpy;
-  }
-
-  function fireMapMove() {
-    act(() => {
-      handlers.moveend?.();
-      handlers.zoomend?.();
-    });
   }
 
   async function fireContextmenu(lat, lng, target = {}, pressDelay = 500) {

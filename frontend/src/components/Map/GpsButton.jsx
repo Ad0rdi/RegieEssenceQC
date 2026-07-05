@@ -11,7 +11,7 @@ export default function GpsButton({ onGpsClick }) {
     if (onGpsClick) onGpsClick({ lat, lng, accuracy });
   };
 
-  const handleError = (err) => {
+  const handleError = () => {
     if (successReceivedRef.current) return;
   };
 
@@ -36,7 +36,7 @@ export default function GpsButton({ onGpsClick }) {
         clearTimeout(timeoutRef);
         showPosition(pos);
       },
-      (err) => {
+      () => {
         clearTimeout(timeoutRef);
         if (successReceivedRef.current) return;
         navigator.geolocation.getCurrentPosition(

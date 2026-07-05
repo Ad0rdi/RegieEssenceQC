@@ -1,100 +1,73 @@
 import { useState, useEffect, useRef } from 'react';
-import { fetchStations as fetchAndProcessStations } from '../services/dataService';
+import { fetchStations, useCachedData as getCachedData, transformCachedStations } from '../services/dataService';
+import { setCache } from '../utils/storage';
+
 
 function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [generatedAt, setGeneratedAt] = useState(null);
+  const [fromCache, setFromCache] = useState(false);
   const prevFuelTypesRef = useRef(null);
+  const isMountedRef = useRef(true);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
+    isMountedRef.current = true;
     const controller = new AbortController();
     const prevFuelTypes = prevFuelTypesRef.current;
     const currentFuelTypes = JSON.stringify(selectedFuelTypes);
 
-    if (prevFuelTypes !== null && prevFuelTypes === currentFuelTypes) {
+    if (prevFuelTypes !== null && prevFuelTypes === currentFuelTypes && hasLoadedRef.current) {
       return;
     }
     prevFuelTypesRef.current = currentFuelTypes;
 
     const loadStations = async () => {
       try {
-        setLoading(true);
-        const data = await fetchAndProcessStations();
+        const cacheResult = await getCachedData(selectedFuelTypes);
 
-        if (!data || !Array.isArray(data.features)) {
-          throw new Error('Invalid GeoJSON format: missing features array');
+        if (cacheResult && isMountedRef.current) {
+          setStations(cacheResult.stations);
+          setGeneratedAt(cacheResult.generatedAt);
+          setFromCache(true);
+          setLoading(false);
+          hasLoadedRef.current = true;
         }
 
-        const typeMap = {
-          'régulier': 'regular',
-          'super': 'super',
-          'diesel': 'diesel',
-          'Régulier': 'regular',
-          'Super': 'super',
-          'Diesel': 'diesel',
-          'regular': 'regular'
-        };
+        if (!controller.signal.aborted) {
+          const data = await fetchStations();
 
-        const transformedStations = data.features
-          .filter(feature =>
-            feature.geometry?.coordinates?.length === 2 &&
-            feature.properties
-          )
-          .map((feature, index) => {
-            const prices = {};
-            const props = feature.properties;
-
-            // Handle Prices array format
-            if (Array.isArray(props.Prices)) {
-              props.Prices.forEach(p => {
-                const mappedType = typeMap[p.GasType];
-                if (mappedType && p.Price && typeof p.Price === 'string' && p.IsAvailable) {
-                  const priceValue = parseFloat(p.Price.replace('¢', '')) / 100;
-                  prices[mappedType] = priceValue;
-                }
-              });
+          if (!controller.signal.aborted) {
+            if (!data || !Array.isArray(data.features)) {
+              // eslint-disable-next-line no-throw-local-return
+              throw new Error('Invalid GeoJSON format: missing features array');
             }
-            // Handle prices object format
-            else if (props.prices && typeof props.prices === 'object') {
-              for (const [key, value] of Object.entries(props.prices)) {
-                const mappedType = typeMap[key];
-                if (mappedType) {
-                  const priceValue = typeof value === 'string'
-                    ? parseFloat(value.replace(/[^\d.]/g, ''))
-                    : value;
-                  prices[mappedType] = priceValue;
-                }
+
+            const transformedStations = transformCachedStations(data, selectedFuelTypes);
+
+            setStations(transformedStations);
+            setGeneratedAt(data?.metadata?.generated_at ?? null);
+            setFromCache(false);
+            setError(null);
+            hasLoadedRef.current = true;
+
+            if (isMountedRef.current) {
+              try {
+                await setCache(data);
+              } catch {
+                // silently ignore cache errors
               }
             }
-
-            return {
-              id: props.id || 'station-' + index,
-              name: props.Name || props.name || props.id,
-              brand: props.brand,
-              company: props.Name || props.company,
-              lat: feature.geometry.coordinates[1],
-              lng: feature.geometry.coordinates[0],
-              prices: prices,
-              address: props.Address || props.address
-            };
-          })
-          .filter(station =>
-            selectedFuelTypes.some(type =>
-              station.prices?.[type] !== undefined && station.prices?.[type] !== null
-            )
-          );
-
-        setStations(transformedStations);
-        setGeneratedAt(data?.metadata?.generated_at ?? null);
-        setError(null);
+          }
+        }
       } catch (err) {
-        if (err.name !== 'AbortError') {
+        if (err.name !== 'AbortError' && isMountedRef.current) {
           setError(err.message || 'Erreur de chargement des stations');
         }
       } finally {
-        if (!controller.signal.aborted) {
+        if (isMountedRef.current && !controller.signal.aborted) {
           setLoading(false);
         }
       }
@@ -104,10 +77,11 @@ function useStations(selectedFuelTypes = ['regular', 'super', 'diesel']) {
 
     return () => {
       controller.abort();
+      isMountedRef.current = false;
     };
-  }, [JSON.stringify(selectedFuelTypes)]);
+  }, [selectedFuelTypes]);
 
-  return { stations, loading, error, generatedAt };
+  return { stations, loading, error, generatedAt, fromCache };
 }
 
 export { useStations };

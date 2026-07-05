@@ -227,8 +227,7 @@ const MapClickHandler = ({ onMapClick }) => {
           pendingMarkerClickState.ref.current = null;
           pinchBaseYRef.current = e.touches[0].clientY;
           const containerPoint = map.mouseEventToContainerPoint(e.touches[0]);
-          const containerLatLng = map.containerPointToLatLng(containerPoint);
-          pinchCenterLatlngRef.current = containerLatLng;
+          pinchCenterLatlngRef.current = map.containerPointToLatLng(containerPoint);
           pinchContainerPointRef.current = containerPoint;
           baseZoomRef.current = map.getZoom();
           const screenCenter = map.getSize()._divideBy(2);
@@ -370,6 +369,7 @@ const MapClickHandler = ({ onMapClick }) => {
       pendingMarkerClickState.touchPhaseRef.current = 'IDLE';
       pendingMarkerClickState.suppressClickRef.current = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, isMobile]);
 
   const handleConfirm = () => {
@@ -461,6 +461,7 @@ const MapClickHandler = ({ onMapClick }) => {
         popupRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingLocation, map]);
 
   return null;

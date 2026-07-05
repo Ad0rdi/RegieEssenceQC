@@ -17,7 +17,7 @@ const mockCitiesData = [
 const mockFetch = vi.fn();
 beforeEach(() => {
   vi.resetAllMocks();
-  global.fetch = mockFetch;
+  window.fetch = mockFetch;
   localStorage.clear();
 
   // Simulate successful load of cities.json

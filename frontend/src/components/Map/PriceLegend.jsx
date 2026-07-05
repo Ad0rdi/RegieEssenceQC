@@ -8,12 +8,6 @@ const FUEL_LABELS = {
   diesel: 'Diesel',
 };
 
-const PRICE_LEVEL_COLORS = {
-  low: '#16a34a',
-  medium: '#f97316',
-  high: '#dc2626',
-};
-
 const LIGHT = {
   bg: '#fff',
   text: '#6b7280',

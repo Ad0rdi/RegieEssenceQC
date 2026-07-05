@@ -38,7 +38,7 @@ function CitySearchInput({ onCitySelect }) {
     async function loadCities() {
       try {
         const response = await fetch(`${import.meta.env.BASE_URL}cities.json`);
-        if (!response.ok) throw new Error('Failed to load cities');
+        if (!response.ok) throw new Error('Failed to load cities'); // eslint-disable-line no-throw-local-return
      const data = await response.json();
       setCities(data);
       const names = new Set();
@@ -52,7 +52,7 @@ function CitySearchInput({ onCitySelect }) {
         setError('Erreur: Impossible de charger les villes');
       }
     }
-    loadCities();
+    loadCities().catch(() => {});
   }, []);
 
   const handleClickOutside = useCallback((e) => {
@@ -212,10 +212,10 @@ function CitySearchInput({ onCitySelect }) {
     if (trimmed.length < 2) return;
     if (!/\d/.test(trimmed)) return;
     const tokens = trimmed.split(/\s+/).filter(t => t.length > 0);
-    const cityName = new Set(cityNamesSet.current);
+    const cityName = Array.from(cityNamesSet.current);
     const streetTokens = tokens.filter(t => {
       if (!/[a-zA-ZÀ-ÿ]/.test(t)) return false;
-      return !cityName.has(t.toLowerCase());
+      return !cityName.includes(t.toLowerCase());
     });
     if (streetTokens.length === 0) return;
 
@@ -228,7 +228,7 @@ function CitySearchInput({ onCitySelect }) {
 
   const handlePreciseKeyDown = useCallback((e) => {
     if (e.key === 'Enter') {
-      handlePreciseSearch();
+      handlePreciseSearch().catch(() => {});
     }
   }, [handlePreciseSearch]);
 
@@ -248,7 +248,7 @@ function CitySearchInput({ onCitySelect }) {
         />
         {isPreciseMode && (
           <button
-            onClick={handlePreciseSearch}
+            onClick={() => handlePreciseSearch().catch(() => {})}
             disabled={!query.trim() || isPreciseSearching}
             className="precise-search-btn"
             title="Rechercher"

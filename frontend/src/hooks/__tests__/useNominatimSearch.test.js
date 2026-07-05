@@ -6,7 +6,7 @@ const mockFetch = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
-  global.fetch = mockFetch;
+  window.fetch = mockFetch;
   localStorage.clear();
 });
 
