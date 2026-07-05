@@ -1,7 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import FuelFilter from '../FuelFilter';
 import { FilterProvider } from '../../../context/FilterContext';
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 function Wrapper({ children }) {
   return <FilterProvider>{children}</FilterProvider>;

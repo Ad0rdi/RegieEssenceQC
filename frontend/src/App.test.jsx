@@ -69,12 +69,29 @@ vi.mock('./components/Map/ZoomPositioner', () => ({
 // Mocking context
 vi.mock('./context/FilterContext', () => ({
   FilterProvider: ({ children }) => <div>{children}</div>,
-  useFilters: () => ({ selectedFuelTypes: ['gasoline', 'diesel'] }),
+  useFilters: () => ({
+    selectedFuelTypes: ['gasoline', 'diesel'],
+    setDrawerOpen: vi.fn(),
+    radiusFilter: null,
+    setRadiusFilter: vi.fn(),
+    priceFilter: { min: null, max: null },
+    setPriceFilter: vi.fn(),
+    centerLocation: null,
+    setCenterLocation: vi.fn(),
+    datasaver: false,
+    toggleDatasaver: vi.fn(),
+    setDatasaver: vi.fn(),
+    resetAllPrefs: vi.fn(),
+  }),
 }));
 
 vi.mock('./context/ThemeContext', () => ({
   ThemeProvider: ({ children }) => <div>{children}</div>,
   useTheme: () => ({ theme: 'light', toggleTheme: vi.fn() }),
+}));
+
+vi.mock('./components/Map/CachedDataBanner', () => ({
+  default: () => <div data-testid="cached-data-banner" />,
 }));
 
 // Mocking useStations hook

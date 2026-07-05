@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { calculateDistance } from '../../utils/geolocation';
+import { getPref, setPref } from '../../utils/storage';
 
 const StationTable = ({ stations, onStationClick, selectedStationId, selectedFuelTypes, centerLocation }) => {
   const [sortConfig, setSortConfig] = useState(() => {
-    const saved = localStorage.getItem('stationTableSort');
+    const saved = getPref('stationTableSort', null);
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -38,7 +39,7 @@ const StationTable = ({ stations, onStationClick, selectedStationId, selectedFue
     }
     const newConfig = { key, direction };
     setSortConfig(newConfig);
-    localStorage.setItem('stationTableSort', JSON.stringify(newConfig));
+    setPref('stationTableSort', newConfig);
   };
 
   const stationsWithDistance = useMemo(() => {

@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { getPref, setPref } from '../utils/storage';
 
 const ThemeContext = createContext();
 
 const STORAGE_KEY = 'theme';
 
 function getInitialTheme() {
-  const stored = localStorage.getItem(STORAGE_KEY);
+  const stored = getPref(STORAGE_KEY, null);
   if (stored === 'dark' || stored === 'light') return stored;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
@@ -15,7 +16,7 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme);
-    localStorage.setItem(STORAGE_KEY, theme);
+    setPref(STORAGE_KEY, theme);
   }, [theme]);
 
   const toggleTheme = () => {

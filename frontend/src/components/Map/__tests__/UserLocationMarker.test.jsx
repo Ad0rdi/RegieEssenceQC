@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import UserLocationMarker from '../UserLocationMarker';
 
-const mockCircle = { addTo: vi.fn(() => mockCircle), remove: vi.fn() };
-const mockCircleMarker = { addTo: vi.fn(() => mockCircleMarker), remove: vi.fn(), bringToFront: vi.fn(), getElement: vi.fn(() => mockDotElement) };
+const mockCircle = { addTo: vi.fn(() => mockCircle), remove: vi.fn(), setLatLng: vi.fn(), setStyle: vi.fn() };
+const mockCircleMarker = { addTo: vi.fn(() => mockCircleMarker), remove: vi.fn(), bringToFront: vi.fn(), getElement: vi.fn(() => mockDotElement), setLatLng: vi.fn() };
 const mockDotElement = { style: {} };
 const mockPane = { style: {} };
 const mockLatLng = { lat: 0, lng: 0 };
@@ -117,18 +117,27 @@ describe('UserLocationMarker', () => {
     expect(mockCircleMarker.addTo).toHaveBeenCalled();
   });
 
-  it('removes old layers when location changes', () => {
+  it('updates existing layers when location changes', () => {
     const { rerender } = render(<UserLocationMarker location={createLocation()} />);
 
     vi.clearAllMocks();
-    mockCircle.addTo.mockReturnValue(mockCircle);
-    mockCircleMarker.addTo.mockReturnValue(mockCircleMarker);
 
     rerender(<UserLocationMarker location={createLocation({ lat: 46.0, lng: -74.0, accuracy: 75 })} />);
 
+    expect(mockL.default.circle).not.toHaveBeenCalled();
+    expect(mockL.default.circleMarker).not.toHaveBeenCalled();
+    expect(mockCircle.setLatLng).toHaveBeenCalledWith(expect.objectContaining({ lat: 46.0, lng: -74.0 }));
+    expect(mockCircle.setStyle).toHaveBeenCalled();
+    expect(mockCircleMarker.setLatLng).toHaveBeenCalledWith(expect.objectContaining({ lat: 46.0, lng: -74.0 }));
+    expect(mockCircleMarker.bringToFront).toHaveBeenCalled();
+  });
+
+  it('removes old layers on unmount', () => {
+    const { unmount } = render(<UserLocationMarker location={createLocation()} />);
+
+    unmount();
+
     expect(mockMap.removeLayer).toHaveBeenCalledWith(mockCircle);
     expect(mockMap.removeLayer).toHaveBeenCalledWith(mockCircleMarker);
-    expect(mockL.default.circle).toHaveBeenCalledWith([46.0, -74.0], expect.any(Object));
-    expect(mockL.default.circleMarker).toHaveBeenCalledWith([46.0, -74.0], expect.any(Object));
   });
 });

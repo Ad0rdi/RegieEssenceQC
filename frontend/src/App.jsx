@@ -21,6 +21,7 @@ import MapClickHandler from './components/Map/MapClickHandler';
 import ManualLocationMarker from './components/Map/ManualLocationMarker';
 import ZoomButtons from './components/Map/ZoomButtons';
 import StationDrawerButton from './components/Map/StationDrawerButton';
+import CachedDataBanner from './components/Map/CachedDataBanner';
 import { calculateDistance } from './utils/geolocation';
 import 'leaflet/dist/leaflet.css';
 
@@ -41,17 +42,14 @@ const ZOOM_DELTA = 0.25;
 
 function AppContent() {
   const isMobile = useIsMobile();
-  const { selectedFuelTypes, drawerOpen, setDrawerOpen } = useFilters();
+  const { selectedFuelTypes, drawerOpen, setDrawerOpen, radiusFilter, setRadiusFilter, priceFilter, setPriceFilter, centerLocation, setCenterLocation, resetAllPrefs } = useFilters();
    const { theme, toggleTheme } = useTheme();
-  const { stations, loading, error, generatedAt } = useStations(selectedFuelTypes);
-  const [centerLocation, setCenterLocation] = useState(null);
+  const { stations, loading, error, generatedAt, fromCache } = useStations(selectedFuelTypes);
 
   const stableCenterLocation = useMemo(() => {
     if (!centerLocation) return null;
     return centerLocation;
   }, [centerLocation?.lat, centerLocation?.lng]);
-   const [priceFilter, setPriceFilter] = useState({ min: null, max: null });
-    const [radiusFilter, setRadiusFilter] = useState(null);
 const [selectedStationId, setSelectedStationId] = useState(null);
   const [selectedStationSource, setSelectedStationSource] = useState(null);
   const [selectedStationClickCount, setSelectedStationClickCount] = useState(0);
@@ -293,7 +291,7 @@ useEffect(() => {
 
               <div className="header-divider" />
 
-              <button onClick={() => { setPriceFilter({ min: null, max: null }); setRadiusFilter(null); setCenterLocation(null); setAddressLocation(null); setManualMarkerLocation(null); }} className="reset-btn">
+              <button onClick={() => { resetAllPrefs(); setAddressLocation(null); setManualMarkerLocation(null); }} className="reset-btn">
                 Réinitialiser
               </button>
 
@@ -318,13 +316,14 @@ useEffect(() => {
           zoomControl={false}
           style={{ height: '100%', width: '100%' }}
         >
-        <div className="leaflet-bottom-controls">
-             {!isMobile && <ZoomButtons />}
-             <GpsButton onGpsClick={(pos) => setGpsLocation(pos)} />
-             <div className="data-update-label">
-               Données mises à jour le {generatedAt ? new Date(generatedAt.slice(0, 23) + 'Z').toLocaleString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '...'}
-             </div>
-           </div>
+           <div className="leaflet-bottom-controls">
+              {!isMobile && <ZoomButtons />}
+              <GpsButton onGpsClick={(pos) => setGpsLocation(pos)} />
+              <div className="data-update-label">
+                Données mises à jour le {generatedAt ? new Date(generatedAt.slice(0, 23) + 'Z').toLocaleString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '...'}
+              </div>
+            </div>
+            <CachedDataBanner fromCache={fromCache} />
           <StationDrawerButton
             stationCount={filteredFeatures.length}
             drawerOpen={drawerOpen}
